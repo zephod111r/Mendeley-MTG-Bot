@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Net.Http;
 using System.Net.Http.Headers;
 
-namespace Hip_Chat_Mtg_Bot
+namespace HipchatMTGBot
 {
     class FuzzyMatch
     {

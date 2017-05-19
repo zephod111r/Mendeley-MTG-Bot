@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Hip_Chat_Mtg_Bot
+namespace HipchatMTGBot
 {
     class Sets
     {       

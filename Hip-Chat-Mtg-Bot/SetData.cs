@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Hip_Chat_Mtg_Bot
+namespace HipchatMTGBot
 {
     class SetData
     {
@@ -18,8 +18,7 @@ namespace Hip_Chat_Mtg_Bot
         public string block;
         public bool onlineOnly;
         public List<object> booster;
-        
-        public List<Card> cards;
 
+        public List<Card> cards;
     }
 }

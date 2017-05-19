@@ -1,0 +1,10 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+*.suo
+/Hip-Chat-Mtg-Bot/bin/Release
+/Hip-Chat-Mtg-Bot/obj/Debug
+/Hip-Chat-Mtg-Bot/obj/Release
+/Hip-Chat-Mtg-Bot/bin/Debug
+*.user

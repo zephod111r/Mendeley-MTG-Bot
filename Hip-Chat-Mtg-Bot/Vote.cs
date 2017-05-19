@@ -3,11 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using static HipchatMTGBot.HipchatMessenger;
 
-namespace Hip_Chat_Mtg_Bot
+namespace HipchatMTGBot
 {
     class Vote
     {
+        const string regexVote = @"vote|Vote|VOTE";
+        const string regexAnswer = @"answer|Answer|ANSWER";
+        const string regexPatternCreateVote = @"\/(" + regexVote + ")" + HipchatMessenger.regexNamedParameters;
+        const string regexPatternVote = @"^\/(?:" + regexAnswer + ")" + HipchatMessenger.regexParameters;
         private Timer timer = null;
 
         public string Requestor = null;
@@ -28,6 +33,18 @@ namespace Hip_Chat_Mtg_Bot
             private set;
         }
 
+        static private Vote CurrentVote
+        {
+            get;
+            set;
+        }
+
+        static public void Init()
+        {
+            Program.Messenger.Handle(regexPatternVote, voteChoice);
+            Program.Messenger.Handle(regexPatternCreateVote, createVote);
+        }
+
         public Vote(string requestingUser, string question, string[] answers, int duration)
         {
             Requestor = requestingUser;
@@ -42,7 +59,7 @@ namespace Hip_Chat_Mtg_Bot
             }
             timer = new Timer(ReportAnswersAndDelete, this, duration, Timeout.Infinite);
             
-            HipchatMessenger.SendMessage(announce);
+            Program.Messenger.SendMessage(announce, HipchatApiV2.Enums.RoomColors.Green);
         }
 
         public void Answer(string user, string answer)
@@ -117,7 +134,53 @@ namespace Hip_Chat_Mtg_Bot
                 }
                 message += "</b></p>";
             }
-            HipchatMessenger.SendMessage(message);
+            Program.Messenger.SendMessage(message);
         }
+
+        private static string voteChoice(string vote, string requestingUser)
+        {
+            if(CurrentVote != null)
+            {
+                CurrentVote.Answer(requestingUser, vote);
+            }
+            return "";
+        }
+
+        private static string createVote(Dictionary<string, string> vote, string requestingUser)
+        {
+            if (vote.Count == 0)
+                return null;
+            
+            if(vote.Keys.Contains("question") == false)
+            {
+                return "";
+            }
+
+            string[] options = { "yes", "no" };
+            int duration = 30 * 1000;
+
+            if (vote.Keys.Contains("options") == true)
+            {
+                string optionString = vote["options"];
+                optionString = optionString.Replace("\"", "");
+                options = optionString.Split(',');
+            }
+
+            if(vote.Keys.Contains("duration") == true)
+            {
+                int.TryParse(vote["duration"], out duration);
+            }
+
+            CurrentVote = new Vote(requestingUser, vote["question"], options, duration);
+            return "";
+        }
+
+        public static Dictionary<string, string> GetHelp(ref Dictionary<string, string> items)
+        {
+            items.Add("/" + regexVote + @" question=""<your question>"" ?duration=<duration> ?answers=<answerchoices>", @"question is the question you are asking<br>duration is Max(60, Min(5, duration))<br>answerchoices is a comma seperated list of potential choices. For answers with spaces double quotes are required ""Like this""");
+            items.Add("/" + regexAnswer + @" <yourchoice>", @"yourchoice must exactly match one of the questions possible answers.");
+            return items;
+        }
+             
     }
 }

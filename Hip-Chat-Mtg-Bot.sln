@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hip-Chat-Mtg-Bot", "Hip-Chat-Mtg-Bot\Hip-Chat-Mtg-Bot.csproj", "{15391BF8-02B9-4238-A02A-B5DB2C06615C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HipchatMTGBot", "Hip-Chat-Mtg-Bot\HipchatMTGBot.csproj", "{15391BF8-02B9-4238-A02A-B5DB2C06615C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
