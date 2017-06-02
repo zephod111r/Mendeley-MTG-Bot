@@ -53,15 +53,20 @@ namespace HipchatMTGBot
             Console.ReadLine();
         }
 
-        private static string getHelp(Dictionary<string,string> options, string requestingUser)
+        private static string getHelp(Dictionary<string, string> options, string requestingUser)
+        {
+            return helpString();
+        }
+
+        public static string helpString()
         {
             Dictionary<string, string> helpItems = new Dictionary<string, string>();
-            
+
             HipchatMessenger.GetHelp(ref helpItems);
             MagicTheGathering.GetHelp(ref helpItems);
             Vote.GetHelp(ref helpItems);
 
-            string helpString = $"<table>";
+            string helpString = $"Help Guide for MTG Bot:<br/><table>";
 
             foreach (var item in helpItems)
             {

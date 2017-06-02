@@ -71,7 +71,7 @@ namespace HipchatMTGBot
         const string regexPatternCard = @"{{(.+?)}}";
         const string regexPatternSet = @"\(\((.+)\)\)";
         const string regexPatternManaOrTapSymbol = @"{[^{}]+}";
-        const string regexPatternSearch = @"\/(search|Search|SEARCH)" + HipchatMessenger.regexNamedParameters;
+        const string regexPatternSearch = @"\/(?:search|Search|SEARCH) " + HipchatMessenger.regexNamedParameters;
 
         private static Timer updateTimer = null;
         private static Timer updateRotDTimer = null;
@@ -90,7 +90,6 @@ namespace HipchatMTGBot
             Program.Messenger.Handle(regexPatternCard, getCard);
             Program.Messenger.Handle(regexPatternSearch, doSearch);
             DisplayRareOfTheDay(null);
-            updateTimer = new Timer(UpdateAndLoadData, null, 24 * 60 * 60000, System.Threading.Timeout.Infinite);
         }
 
         private static void UpdateAndLoadData(Object o)
@@ -127,6 +126,7 @@ namespace HipchatMTGBot
             }
 
             LoadData();
+            updateTimer = new Timer(UpdateAndLoadData, null, 24 * 60 * 60000, System.Threading.Timeout.Infinite);
         }
 
         private static void LoadData()
@@ -375,7 +375,7 @@ namespace HipchatMTGBot
         public static Dictionary<string, string> GetHelp(ref Dictionary < string, string> items)
         {
             items.Add("{{<card name>}}", "Look up a specific card name");
-            items.Add("{{<?partial? card name>:<maxtodisplay>:<maxcolumns>}}", "Look up a (partial) card name and return up to Min(21, maxtodisplay) items across Min(10, columns) columns.");
+            items.Add("{{<partial card name>:<maxtodisplay>:<maxcolumns>}}", "Look up a (partial) card name and return up to Min(21, maxtodisplay) items across Min(10, columns) columns.");
             items.Add("((<set name>))", "Cards searched for on the same line will look up in the specific set.  This uses exact matching on the set name.");
             return items;
         }

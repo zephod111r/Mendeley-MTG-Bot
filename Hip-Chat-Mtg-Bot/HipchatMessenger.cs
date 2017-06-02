@@ -12,12 +12,12 @@ namespace HipchatMTGBot
     class HipchatMessenger : ObjectHeart
     {
         #region Const Values
-        public const string regexParamName = @"(?:[a-zA-Z0-9\-]+)";
+        public const string regexParamName = @"[a-zA-Z0-9\-]+";
         public const string regexParamSeparator = @"[:=]";
-        public const string regexParamLeft = regexParamName + regexParamSeparator;
-        public const string regexParamValue = @"(?:(?:(?:""(?:[^\n\r""]+)"")|[a-zA-Z0-9\\\/.,]+)(?:,?))";
-        public const string regexNamedParameters = @"(?:(?:[\ ])(" + regexParamLeft + regexParamValue + @"+))+";
-        public const string regexParameters = @"(?:(?:[\ ])"+ regexParamValue + @")+";
+        public const string regexParamValue = @"(?:""(?:[^\n\r""]+)"")|[a-zA-Z0-9\\\/.,]+";
+        public const string regexNamedParameters = @"(" + regexParamName + @")" + regexParamSeparator + @"(" + regexParamValue + @")";
+
+        public const string regexParameters = @"((?:(?:[\ ])"+ regexParamValue + @")+)";
         const string RegexPatternName = @" name:.+,";
         #endregion
 
@@ -228,6 +228,11 @@ namespace HipchatMTGBot
 
                     m_ExcludeList.Add(item.Id);
 
+                    if(item.Message.Contains("Help Guide for MTG Bot:"))
+                    {
+                        continue;
+                    }
+
                     if (item.Message == null)
                     {
                         continue;
@@ -256,25 +261,19 @@ namespace HipchatMTGBot
                         var pair = m_Handlers.FirstOrDefault(p => p.Key == pattern);
                         foreach (Match match in Regex.Matches(item.Message, $"^" + pair.Key))
                         {
-                            Dictionary<string, string> parameters = null;
-                            string[] param = match.Value.Split(' ');
-                            if (param.Count() > 1)
-                            {
-                                parameters = new Dictionary<string, string>();
-                                foreach (string keyvalue in param)
-                                {
-                                    string[] elements = keyvalue.Split('=');
-                                    if (elements == null || elements.Count() != 2 || elements[0] == "" || elements[1] == "")
-                                    {
-                                        continue;
-                                    }
-
-                                    parameters[elements[0].ToLower()] = elements[1];
-                                }
-                            }
-
                             if (!String.IsNullOrEmpty(match.Value) && pair.Value != null)
                             {
+                                Dictionary<string, string> parameters = new Dictionary<string, string>();
+                                foreach (Match paramMatch in Regex.Matches(item.Message, regexNamedParameters))
+                                {
+                                    if (paramMatch.Groups.Count != 3)
+                                        continue;
+
+                                    if (paramMatch.Groups[1].Value == "" || paramMatch.Groups[1].Value == null)
+                                        continue;
+
+                                    parameters[paramMatch.Groups[1].Value.ToLower()] = paramMatch.Groups[2].Value.ToLower();
+                                }
                                 string response = pair.Value(parameters, from);
                                 if (response != null && response != "")
                                 {
@@ -291,9 +290,9 @@ namespace HipchatMTGBot
                         var pair = m_HandlersAlt.FirstOrDefault(p => p.Key == oldpattern);
                         foreach (Match match in Regex.Matches(item.Message, pair.Key))
                         {
-                            if (!String.IsNullOrEmpty(match.Groups[0].Value) && pair.Value != null)
+                            if (!String.IsNullOrEmpty(match.Groups[0].Value) && pair.Value != null && match.Groups.Count == 2 && !String.IsNullOrEmpty(match.Groups[1].Value))
                             {
-                                string response = pair.Value(match.Value, from);
+                                string response = pair.Value(match.Groups[1].Value, from);
                                 if (response != null && response != "")
                                 {
                                     SendMessage(response);

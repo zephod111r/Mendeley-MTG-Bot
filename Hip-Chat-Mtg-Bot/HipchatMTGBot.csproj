@@ -64,10 +64,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Card.cs" />
+    <Compile Include="ICommandOption.cs" />
     <Compile Include="HipchatMessenger.cs" />
     <Compile Include="FuzzyMatch.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="ICommand.cs" />
+    <Compile Include="IExecuteInHTML.cs" />
     <Compile Include="MagicTheGathering.cs" />
     <Compile Include="ObjectHeart.cs" />
     <Compile Include="Program.cs" />

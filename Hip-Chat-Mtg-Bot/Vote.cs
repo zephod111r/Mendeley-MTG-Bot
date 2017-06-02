@@ -9,10 +9,10 @@ namespace HipchatMTGBot
 {
     class Vote
     {
+        const string regexAsk = @"Ask|ask|ASK";
         const string regexVote = @"vote|Vote|VOTE";
-        const string regexAnswer = @"answer|Answer|ANSWER";
-        const string regexPatternCreateVote = @"\/(" + regexVote + ")" + HipchatMessenger.regexNamedParameters;
-        const string regexPatternVote = @"^\/(?:" + regexAnswer + ")" + HipchatMessenger.regexParameters;
+        const string regexPatternQuestion = @"\/(" + regexAsk + ") " + HipchatMessenger.regexNamedParameters;
+        const string regexPatternVote = @"^\/(?:" + regexVote + ") " + HipchatMessenger.regexParameters;
         private Timer timer = null;
 
         public string Requestor = null;
@@ -22,6 +22,7 @@ namespace HipchatMTGBot
             get;
             private set;
         }
+
         public Dictionary<string, string> Voters
         {
             get;
@@ -42,7 +43,7 @@ namespace HipchatMTGBot
         static public void Init()
         {
             Program.Messenger.Handle(regexPatternVote, voteChoice);
-            Program.Messenger.Handle(regexPatternCreateVote, createVote);
+            Program.Messenger.Handle(regexPatternQuestion, createVote);
         }
 
         public Vote(string requestingUser, string question, string[] answers, int duration)
@@ -57,7 +58,7 @@ namespace HipchatMTGBot
                 Answers.Add(answer, 0);
                 announce += "<br/>" + answer;
             }
-            timer = new Timer(ReportAnswersAndDelete, this, duration, Timeout.Infinite);
+            timer = new Timer(ReportAnswersAndDelete, this, duration * 1000, Timeout.Infinite);
             
             Program.Messenger.SendMessage(announce, HipchatApiV2.Enums.RoomColors.Green);
         }
@@ -148,6 +149,9 @@ namespace HipchatMTGBot
 
         private static string createVote(Dictionary<string, string> vote, string requestingUser)
         {
+            if (CurrentVote != null)
+                return null;
+
             if (vote.Count == 0)
                 return null;
             
@@ -157,11 +161,11 @@ namespace HipchatMTGBot
             }
 
             string[] options = { "yes", "no" };
-            int duration = 30 * 1000;
+            int duration = 30;
 
-            if (vote.Keys.Contains("options") == true)
+            if (vote.Keys.Contains("answers") == true)
             {
-                string optionString = vote["options"];
+                string optionString = vote["answers"];
                 optionString = optionString.Replace("\"", "");
                 options = optionString.Split(',');
             }
@@ -169,6 +173,16 @@ namespace HipchatMTGBot
             if(vote.Keys.Contains("duration") == true)
             {
                 int.TryParse(vote["duration"], out duration);
+
+                if(duration > 3600)
+                {
+                    duration = 3600;
+                }
+
+                if(duration < 300)
+                {
+                    duration = 300;
+                }
             }
 
             CurrentVote = new Vote(requestingUser, vote["question"], options, duration);
@@ -177,8 +191,8 @@ namespace HipchatMTGBot
 
         public static Dictionary<string, string> GetHelp(ref Dictionary<string, string> items)
         {
-            items.Add("/" + regexVote + @" question=""<your question>"" ?duration=<duration> ?answers=<answerchoices>", @"question is the question you are asking<br>duration is Max(60, Min(5, duration))<br>answerchoices is a comma seperated list of potential choices. For answers with spaces double quotes are required ""Like this""");
-            items.Add("/" + regexAnswer + @" <yourchoice>", @"yourchoice must exactly match one of the questions possible answers.");
+            items.Add("/" + regexAsk + @" question=""<your question>"" ?duration=<duration in seconds> ?answers=<answerchoices>", @"question is the question you are asking<br>duration is Max(3600, Min(300, duration))<br>answerchoices is a comma seperated list of potential choices. For answers with spaces double quotes are required ""Like this""");
+            items.Add("/" + regexVote + @" <yourchoice>", @"yourchoice must exactly match one of the questions possible answers.");
             return items;
         }
              
