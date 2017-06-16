@@ -35,6 +35,12 @@ namespace HipchatMTGBot
             private set;
         }
 
+        static public Azure AzureStorage
+        {
+            get;
+            private set;
+        }
+
         static public MagicTheGathering CardManager
         {
             get;
@@ -43,6 +49,7 @@ namespace HipchatMTGBot
 
         static void Main(string[] args)
         {
+            AzureStorage = new Azure();
             Messenger = new HipchatMessenger();
             ParseArguments(args);
             CardManager = new MagicTheGathering();
@@ -97,15 +104,28 @@ namespace HipchatMTGBot
             foreach (string arg in args)
             {
                 string[] elements = arg.Split('=');
-                if (elements.Length == 2)
+                if (elements.Length >= 2)
                 {
+                    string value = "";
+
+                    for (var i = 1; i < elements.Length; ++i)
+                    {
+                        if (i != 1) value += "=";
+                        value += elements[i];
+                    }
+
+                    if (Regex.Match(value, $"^\".+\"$").Success)
+                    {
+                        value = value.Substring(1, value.Count() - 2);
+                    }
+
                     if (!arguments.ContainsKey(elements[0].ToLower()))
                     {
-                        arguments.Add(elements[0].ToLower(), elements[1]);
+                        arguments.Add(elements[0].ToLower(), value);
                     }
                     else
                     {
-                        arguments[elements[0].ToLower()] = elements[1];
+                        arguments[elements[0].ToLower()] = value;
                     }
                     changes.Add(elements[0].ToLower());
                 }
@@ -131,6 +151,10 @@ namespace HipchatMTGBot
                 else if (change == "apikey")
                 {
                     Messenger.ApiKey = arguments["apikey"];
+                }
+                else if(change == "azurekey")
+                {
+                    AzureStorage.StorageKey = arguments["azurekey"];
                 }
             }
         }
