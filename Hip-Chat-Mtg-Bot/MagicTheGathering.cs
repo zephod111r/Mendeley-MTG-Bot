@@ -405,9 +405,115 @@ namespace HipchatMTGBot
             return GenerateCardData(cardName, SetData);
         }
 
+        private static bool doMatch(Card card, Dictionary<string, string> search)
+        {
+            foreach(KeyValuePair<string, string> pair in search)
+            {
+                if (pair.Key == "name")
+                {
+                    if(!card.name.ToLower().Contains(pair.Value))
+                    {
+                        return false;
+                    }
+                }
+                else if (pair.Key == "manacost")
+                {
+                    if(!card.manaCost.ToLower().Contains(pair.Value))
+                    {
+                        return false;
+                    }
+                }
+                else if (pair.Key == "cmc")
+                {
+                    float cmc = -1.0f;
+                    float.TryParse(pair.Value, out cmc);
+                    if (cmc != card.cmc)
+                    {
+                        return false;
+                    }
+                }
+                else if (pair.Key == "type")
+                {
+                    if (!card.type.ToLower().Contains(pair.Value))
+                    {
+                        return false;
+                    }
+                }
+                else if (pair.Key == "supertypes")
+                {
+                    if (!card.supertypes.Contains(pair.Value, StringComparer.CurrentCultureIgnoreCase))
+                    {
+                        return false;
+                    }
+                }
+                else if (pair.Key == "types")
+                {
+                    if (!card.types.Contains(pair.Value, StringComparer.CurrentCultureIgnoreCase))
+                    {
+                        return false;
+                    }
+                }
+                else if (pair.Key == "text")
+                {
+                    if (card.text==null || !card.text.ToLower().Contains(pair.Value))
+                    {
+                        return false;
+                    }
+                }
+                else if (pair.Key == "colour")
+                {
+                    if (card.colors == null && pair.Value != "none")
+                    {
+                        return false;
+                    }
+                    else if (card.colors!=null && !card.colors.Contains(pair.Value, StringComparer.CurrentCultureIgnoreCase))
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
         private static string doSearch(Dictionary<string,string> search, string requestingUser)
         {
-            return "";
+            Dictionary<string, Card> cardsFound = new Dictionary<string, Card>();
+            foreach(SetData set in cardJson.Values)
+            {
+                foreach(Card card in set.cards)
+                {
+                    if(doMatch(card, search))
+                    {
+                        if (!cardsFound.ContainsKey(card.name))
+                        {
+                            cardsFound.Add(card.name, card);
+                        }
+                        else
+                        {
+                            if(cardsFound[card.name].multiverseid < card.multiverseid)
+                            {
+                                cardsFound[card.name] = card;
+                            }
+                        }
+                    }
+                }
+            }
+            string returnVal = "<table>";
+            int count = 0; 
+            foreach (Card card in cardsFound.Values.OrderByDescending(p=>p.multiverseid))
+            {
+                returnVal += "<tr><td>";
+                returnVal += displayCard(card, 350, 250, true);
+                returnVal += "</td></tr>";
+
+                if(++count > 10)
+                {
+                    break;
+                }
+
+            }
+            returnVal += "</table>";
+            return returnVal;
         }
 
 

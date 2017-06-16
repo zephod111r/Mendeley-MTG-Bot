@@ -272,7 +272,14 @@ namespace HipchatMTGBot
                                     if (paramMatch.Groups[1].Value == "" || paramMatch.Groups[1].Value == null)
                                         continue;
 
-                                    parameters[paramMatch.Groups[1].Value.ToLower()] = paramMatch.Groups[2].Value.ToLower();
+                                    string value = paramMatch.Groups[2].Value.ToLower();
+
+                                    if(Regex.Match(value, $"^\".+\"$").Success)
+                                    {
+                                        value = value.Substring(1, value.Length - 2);
+                                    }
+
+                                    parameters[paramMatch.Groups[1].Value.ToLower()] = value;
                                 }
                                 string response = pair.Value(parameters, from);
                                 if (response != null && response != "")
