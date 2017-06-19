@@ -78,7 +78,7 @@ namespace HipchatMTGBot
 
         public string Upload(string file, string table)
         {
-            CloudBlockBlob blockBlob = EnsureBlobPresence("cotd").GetBlockBlobReference(file);
+            CloudBlockBlob blockBlob = EnsureBlobPresence(table).GetBlockBlobReference(file);
             using (var fileStream = System.IO.File.OpenRead(file))
             {
                 blockBlob.UploadFromStream(fileStream);

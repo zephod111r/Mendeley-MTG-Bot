@@ -103,7 +103,7 @@ namespace HipchatMTGBot
         /// </summary>
         protected override void StartHeart()
         {
-            m_MessageTimer = new Timer(ProcessChatHistoryDelegate, this, 10000, Timeout.Infinite);
+            m_MessageTimer = new Timer(ProcessChatHistoryDelegate, this, 15000, Timeout.Infinite);
         }
         #endregion
 
@@ -219,7 +219,7 @@ namespace HipchatMTGBot
                 m_Mutex.WaitOne();
                 history = m_Client.ViewRecentRoomHistory(Room);
 
-                foreach (var item in history.Items.OrderByDescending(q => q.Date))
+                foreach (var item in history.Items.OrderBy(q => q.Date))
                 {
                     if (m_ExcludeList.Contains(item.Id))
                     {

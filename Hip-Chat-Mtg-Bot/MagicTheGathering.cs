@@ -176,11 +176,16 @@ namespace HipchatMTGBot
             }
             return 0;
         }
-
-        private static string downloadCardImage(Card card)
+        
+        private static string uploadCardImage(Card card, Image src)
         {
-            string imageSrc = @"<!DOCTYPE html><html lang=""en"" xmlns=""http://www.w3.org/1999/xhtml""><head><meta charset=""utf-8"" /><title></title></head><body><img src=http://gatherer.wizards.com/Handlers/Image.ashx?multiverseid=" + card.multiverseid + "&amp;type=card /></body></html>";
-            Image src = TheArtOfDev.HtmlRenderer.WinForms.HtmlRender.RenderToImage(imageSrc);
+            src.Save(HttpUtility.UrlEncode(card.name) + ".jpeg");
+            return Program.AzureStorage.Upload(HttpUtility.UrlEncode(card.name) + ".jpeg", "rotd");
+        }
+        
+        private static string uploadCroppedCardImage(Card card, Image src)
+        {
+            string cardName = HttpUtility.UrlEncode(Guid.NewGuid().ToString()) + ".jpeg";
             Bitmap target = new Bitmap(175, 134);
             if (src != null)
             {
@@ -190,10 +195,18 @@ namespace HipchatMTGBot
                                      new Rectangle(32, 43, target.Width, target.Height),
                                      GraphicsUnit.Pixel);
                 }
-                target.Save(HttpUtility.UrlEncode(card.name) + ".jpeg");
+                target.Save(cardName);
             }
-            
-            return Program.AzureStorage.Upload(HttpUtility.UrlEncode(card.name) + ".jpeg", "cotd");
+            return Program.AzureStorage.Upload(cardName, "cotd");
+        }
+
+        private static string prepareCardImage(Card card)
+        {
+            string imageSrc = @"<!DOCTYPE html><html lang=""en"" xmlns=""http://www.w3.org/1999/xhtml""><head><meta charset=""utf-8"" /><title></title></head><body><img src=http://gatherer.wizards.com/Handlers/Image.ashx?multiverseid=" + card.multiverseid + "&amp;type=card /></body></html>";
+            Image src = TheArtOfDev.HtmlRenderer.WinForms.HtmlRender.RenderToImage(imageSrc);
+
+            uploadCardImage(card, src);
+            return uploadCroppedCardImage(card, src);
         }
 
         private static void DisplayRareOfTheDay(Object o)
@@ -220,6 +233,9 @@ namespace HipchatMTGBot
 
                 int index = localRandom.Next() % rareMythic.Count;
                 Card todisplay = rareMythic.ElementAt(index);
+
+                prepareCardImage(todisplay);
+
                 codUsedCards.Add(todisplay.name.ToUpper());
 
                 var cardData = "MTG Bot - Card of the day<br/>" + GenerateCardData(todisplay.name, set.name);
@@ -236,6 +252,14 @@ namespace HipchatMTGBot
             {
                 targetTime = targetTime.AddHours(9 - targetTime.Hour);
                 targetTime = targetTime.AddDays(1);
+                if (targetTime.DayOfWeek == DayOfWeek.Saturday)
+                {
+                    targetTime = targetTime.AddDays(2);
+                }
+                if (targetTime.DayOfWeek == DayOfWeek.Sunday)
+                {
+                    targetTime = targetTime.AddDays(1);
+                }
             }
             else if (targetTime.Hour < 10)
             {
@@ -278,7 +302,7 @@ namespace HipchatMTGBot
                 Card todisplay = rareMythic.ElementAt(index);
 
                 CotD = new CotD();
-                CotD.display = "MTG Bot - Card of the day<br/><img src=" + downloadCardImage(todisplay) + " />";
+                CotD.display = "MTG Bot - Card of the day<br/><img src=" + prepareCardImage(todisplay) + " />";
                 CotD.card = todisplay;
 
                 codUsedCards.Add(todisplay.name.ToUpper());
@@ -296,6 +320,14 @@ namespace HipchatMTGBot
             {
                 targetTime = targetTime.AddHours(9 - targetTime.Hour);
                 targetTime = targetTime.AddDays(1);
+                if (targetTime.DayOfWeek == DayOfWeek.Saturday)
+                {
+                    targetTime = targetTime.AddDays(2);
+                }
+                if (targetTime.DayOfWeek == DayOfWeek.Sunday)
+                {
+                    targetTime = targetTime.AddDays(1);
+                }
             }
             else if (targetTime.Hour < 10)
             {
@@ -303,6 +335,7 @@ namespace HipchatMTGBot
             }
 
             targetTime = targetTime.AddMinutes(59 - targetTime.Minute);
+            targetTime = targetTime.AddMinutes(30);
             targetTime = targetTime.AddSeconds(59 - targetTime.Second);
             targetTime = targetTime.AddMilliseconds(1000 - targetTime.Millisecond);
 
@@ -559,7 +592,7 @@ namespace HipchatMTGBot
                 return ret;
             }
 
-            return requestingUser + " Failure";
+            return requestingUser + " " + cardName + " (Incorrect)";
         }
 
         private static bool doMatch(Card card, Dictionary<string, string> search)
