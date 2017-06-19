@@ -23,6 +23,7 @@ namespace HipchatMTGBot
 {
     class MagicTheGathering
     {
+        private const string TableName = "mtgtable";
         static private Dictionary<string, string> symbolReplacement = new Dictionary<string, string>()
         {
             { "{C}",  "<img alt='{C}' src='http://gatherer.wizards.com/Handlers/Image.ashx?size=small&name=C&type=symbol' width='15px' height='15px' />" },
@@ -159,7 +160,7 @@ namespace HipchatMTGBot
             }
         }
 
-        private static string displayCard(Card card, int height, int width, Boolean displayDetails = false)
+        private static string displayCard(Card card, int height, int width)
         {
             var cardImg = "<img src=\"http://gatherer.wizards.com/Handlers/Image.ashx?multiverseid=" + card.multiverseid + "&amp;type=card\" height=\"" + height + "\" width=\"" + width + "\">";
 
@@ -192,7 +193,7 @@ namespace HipchatMTGBot
                 target.Save(HttpUtility.UrlEncode(card.name) + ".jpeg");
             }
             
-            return Program.AzureStorage.Upload(HttpUtility.UrlEncode(card.name) + ".jpeg");
+            return Program.AzureStorage.Upload(HttpUtility.UrlEncode(card.name) + ".jpeg", "cotd");
         }
 
         private static void DisplayRareOfTheDay(Object o)
@@ -380,7 +381,7 @@ namespace HipchatMTGBot
             {
                 card = latestCardSet.cards.Last(c => c.name.ToUpper() == cardName.ToUpper());
                 html = "<table><tr><td>";
-                html += displayCard(card, 350, 250, true);
+                html += displayCard(card, 350, 250);
                 html += "</td>";
 
                 if (card.text != null)
@@ -429,9 +430,6 @@ namespace HipchatMTGBot
                         widthAlignedText = widthAlignedText.Replace(match.Value, switchSymbol);
                     }
                     html += String.Format("<td>{0}<br/><br/>{1}<br/><br/>{2}<br/></td>", card.type, card.rarity, widthAlignedText);
-
-                    string image = downloadCardImage(card);
-                    //GetCardPucaPoints(card);
                 }
 
                 html += "</tr></table>";
@@ -512,6 +510,22 @@ namespace HipchatMTGBot
 
         private static string doCardOfTheDay(string cardName, string requestingUser)
         {
+            if (cardName.ToLower().Equals("score"))
+            {
+                List<Player> players = new List<Player>();
+                Program.AzureStorage.Populate<Player>(out players, TableName, Program.Messenger.Room);
+
+                string ret = "Current Player Scores are:<br><table>";
+
+                foreach(var player in players)
+                {
+                    ret += "<tr><td>" + player.RowKey + "</td><td></td><td>" + player.CotDScore.ToString() + "</td></tr>";
+                }
+
+                ret += "</table>";
+
+                return ret;
+            }
 
             if (CotD == null)
                 return requestingUser + " was Too Late!";
@@ -521,10 +535,28 @@ namespace HipchatMTGBot
                 return CotD.display;
             }
 
-            if(cardName.ToLower().Equals( CotD.card.name.ToLower()))
+            if (cardName.ToLower().Equals( CotD.card.name.ToLower()))
             {
+                string ret = requestingUser + " Success<br>" + displayCard(CotD.card, 350, 250);
+
+                List<Player> players = new List<Player>();
+                Program.AzureStorage.Populate<Player>(out players, TableName, Program.Messenger.Room);
+                Player player = players.Where(p => p.RowKey.Equals(requestingUser)).FirstOrDefault();
+
+                if(player == null)
+                {
+                    player = new Player();
+                    player.PartitionKey = Program.Messenger.Room;
+                    player.RowKey = requestingUser;
+                    player.CotDScore = 0;
+                }
+
+                player.CotDScore += 1;
+
+                Program.AzureStorage.UploadTableData(player, TableName);
+
                 CotD = null;
-                return requestingUser + " Success";
+                return ret;
             }
 
             return requestingUser + " Failure";

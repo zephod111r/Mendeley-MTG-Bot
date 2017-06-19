@@ -75,7 +75,7 @@ namespace HipchatMTGBot
         /// </summary>
         public string Room
         {
-            private get { return m_Room; }
+            internal get { return m_Room; }
             set
             {
                 m_Room = value;
