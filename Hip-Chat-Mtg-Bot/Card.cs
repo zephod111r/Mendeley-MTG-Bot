@@ -6,6 +6,12 @@ using System.Threading.Tasks;
 
 namespace HipchatMTGBot
 {
+    class Ruling
+    {
+        public string date;
+        public string text;
+    }
+
     class Card
     {
         public string name;
@@ -13,7 +19,7 @@ namespace HipchatMTGBot
         public float cmc;
         public List<string> colors;
         public string type;
-        public List<string> supertypes;
+        public List<string> subtypes;
         public List<string> types;
         public string rarity;
         public string text;
@@ -22,9 +28,12 @@ namespace HipchatMTGBot
         public string number;
         public string power;
         public string toughness;
-        public string layout;
         public int multiverseid;
         public string imageName;
+        public List<Ruling> rulings;
+        public string layout;
+        public List<string> printings;
+        public List<string> colorIdentity;
     }
 
     class CardResult : IComparable

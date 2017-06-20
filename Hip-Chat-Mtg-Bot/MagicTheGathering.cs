@@ -86,7 +86,9 @@ namespace HipchatMTGBot
 
         const string regexCardOfTheDay = @"cotd|CotD|COTD";
         const string regexSearch = @"search|Search|SEARCH";
+        const string regexRulings = @"rulings|Rulings|RULINGS";
 
+        const string regexPatternRulings = @"\/(?:" + regexRulings + ") (.+)";
         const string regexPatternCardOfTheDay = @"\/(?:" + regexCardOfTheDay + ") (.+)";
         const string regexPatternSearch = @"\/(?:" + regexSearch + ") " + HipchatMessenger.regexNamedParameters;
 
@@ -112,9 +114,15 @@ namespace HipchatMTGBot
             Program.Messenger.Handle(regexPatternSet, setSetToUse);
             Program.Messenger.Handle(regexPatternCard, getCard);
             Program.Messenger.Handle(regexPatternCardOfTheDay, doCardOfTheDay);
+            Program.Messenger.Handle(regexPatternRulings, doDisplayRulings);
             Program.Messenger.Handle(regexPatternSearch, doSearch);
             DisplayRareOfTheDay(null);
             DisplayCardOfTheDay(null);
+        }
+
+        private string doDisplayRulings(string cardName, string userName)
+        {
+            return GenerateCardData(cardName, SetData, true);
         }
 
         private static void UpdateAndLoadData(Object o)
@@ -238,6 +246,12 @@ namespace HipchatMTGBot
                 int index = localRandom.Next() % rareMythic.Count;
                 Card todisplay = rareMythic.ElementAt(index);
 
+                string layout = todisplay.layout;
+                if(string.Equals(layout, "normal", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    continue;
+                }
+
                 prepareCardImage(todisplay);
 
                 codUsedCards.Add(todisplay.name.ToUpper());
@@ -349,7 +363,7 @@ namespace HipchatMTGBot
         }
 
 
-        private static string GenerateCardData(string cardData, string setData)
+        private static string GenerateCardData(string cardData, string setData, bool showRulings=false)
         {
             string cardName = "";
             int numResults = 3;
@@ -424,7 +438,12 @@ namespace HipchatMTGBot
                 {
                     html += getHtmlText(card);
                 }
+                
                 html += "</tr></table>";
+                if(showRulings == true)
+                {
+                    html += prettyPrintRules(card);
+                }
             }
             else
             {
@@ -481,32 +500,7 @@ namespace HipchatMTGBot
                 return "";
             }
 
-            string cardText = card.text.Replace(".", ". ");
-            cardText = cardText.Replace(". )", ".) ");
-            cardText = cardText.Replace(". \"", ".\"");
-            string[] text = cardText.Split(' ');
-
-            int nextWord = 0;
-            string widthAlignedText = "";
-            while (nextWord < text.Length)
-            {
-                string nextLine = "<br/>";
-                while (nextWord < text.Length && nextLine.Length < 50)
-                {
-                    nextLine += text[nextWord];
-                    if (text[nextWord].EndsWith(".") || text[nextWord].EndsWith(".)"))
-                    {
-                        ++nextWord;
-                        break;
-                    }
-                    else
-                    {
-                        nextLine += " ";
-                    }
-                    ++nextWord;
-                }
-                widthAlignedText += nextLine;
-            }
+            string widthAlignedText = widthAlign(card.text);
 
             List<string> ignoreList = new List<string>();
 
@@ -528,13 +522,64 @@ namespace HipchatMTGBot
             return String.Format("<td>{0}<br/><br/>{1}<br/><br/>{2}<br/></td>", card.type, card.rarity, widthAlignedText);
         }
 
+        private static string widthAlign(string cardText, int width = 50)
+        {
+            cardText = cardText.Replace(".", ". ");
+            cardText = cardText.Replace(". )", ".) ");
+            cardText = cardText.Replace(". \"", ".\"");
+            string[] text = cardText.Split(' ');
+
+            int nextWord = 0;
+            string widthAlignedText = "";
+            while (nextWord < text.Length)
+            {
+                string nextLine = "<br/>";
+                while (nextWord < text.Length && nextLine.Length < width)
+                {
+                    nextLine += text[nextWord];
+                    if (text[nextWord].EndsWith(".") || text[nextWord].EndsWith(".)"))
+                    {
+                        ++nextWord;
+                        break;
+                    }
+                    else
+                    {
+                        nextLine += " ";
+                    }
+                    ++nextWord;
+                }
+                widthAlignedText += nextLine;
+            }
+            return widthAlignedText;
+        }
+
+        private static string prettyPrintRules(Card card)
+        {
+            string output = "";
+
+            if(card.rulings != null && card.rulings.Count != 0)
+            {
+                output = "<table>";
+                foreach(Ruling rule in card.rulings.OrderByDescending(p=>p.date))
+                {
+                    DateTime date;
+                    DateTime.TryParse(rule.date, out date);
+                    output += "<tr><td><ul><li> </li></ul></td><td>" + date.ToLongDateString() + "</td><td></td><td>" + widthAlign(rule.text, 100) + "</td></tr>";
+                }
+                output += "</table>";
+            }
+
+            return output;
+        }
+
         public static Dictionary<string, string> GetHelp(ref Dictionary < string, string> items)
         {
             items.Add(@"{{<card name>}}", "Look up a specific card name");
             items.Add(@"{{<partial card name>:<maxtodisplay>:<maxcolumns>}}", @"Look up a (partial) card name and return up to Min(21, maxtodisplay) items across Min(10, columns) columns.");
             items.Add(@"((<set name>))", @"Cards searched for on the same line will look up in the specific set.  This uses exact matching on the set name.");
-            items.Add(@"/" + regexSearch + " type|colour|cmc|manacost|supertype|name|text=<value>", @"Search for a card matching all the search parameters given.  Note you can only search for one of each type of param ");
+            items.Add(@"/" + regexSearch + " type|colour|cmc|manacost|subtype|name|text|colouridentity|printings=<value>", @"Search for a card matching all the search parameters given.  Note you can only search for one of each type of param ");
             items.Add(@"/" + regexCardOfTheDay + @" show|score|<your guess>", @"Display score, show the current CotD (if any!) or take a guess at the current CotD!");
+            items.Add(@"/" + regexRulings + @" <card name>", @"Display the card and corresponding Rulings.");
             return items;
         }
 
@@ -644,12 +689,23 @@ namespace HipchatMTGBot
                         return false;
                     }
                 }
-                else if (pair.Key == "supertypes")
+                else if (pair.Key == "printings")
+                {
+                    string[] values = pair.Value.Split(',');
+                    foreach(string value in values)
+                    {
+                        if (card.printings == null || !card.printings.Contains(value, StringComparer.CurrentCultureIgnoreCase))
+                        {
+                            return false;
+                        }
+                    }
+                }
+                else if (pair.Key == "subtype")
                 {
                     string[] types = pair.Value.Split(',');
                     foreach(string type in types)
                     {
-                        if (!card.supertypes.Contains(type, StringComparer.CurrentCultureIgnoreCase))
+                        if (card.subtypes == null || !card.subtypes.Contains(type, StringComparer.CurrentCultureIgnoreCase))
                         {
                             return false;
                         }
@@ -660,7 +716,18 @@ namespace HipchatMTGBot
                     string[] types = pair.Value.Split(',');
                     foreach (string type in types)
                     {
-                        if (!card.types.Contains(type, StringComparer.CurrentCultureIgnoreCase))
+                        if (card.types == null || !card.types.Contains(type, StringComparer.CurrentCultureIgnoreCase))
+                        {
+                            return false;
+                        }
+                    }
+                }
+                else if (pair.Key == "colouridentity")
+                {
+                    string[] types = pair.Value.Split(',');
+                    foreach (string type in types)
+                    {
+                        if (card.colorIdentity == null || !card.colorIdentity.Contains(type, StringComparer.CurrentCultureIgnoreCase))
                         {
                             return false;
                         }
