@@ -81,10 +81,14 @@ namespace HipchatMTGBot
         };
 
         const string regexPatternCard = @"{{(.+?)}}";
-        const string regexPatternCardOfTheDay = @"\/(?:CotD|COTD|cotd) (.+)";
         const string regexPatternSet = @"\(\((.+)\)\)";
         const string regexPatternManaOrTapSymbol = @"{[^{}]+}";
-        const string regexPatternSearch = @"\/(?:search|Search|SEARCH) " + HipchatMessenger.regexNamedParameters;
+
+        const string regexCardOfTheDay = @"cotd|CotD|COTD";
+        const string regexSearch = @"search|Search|SEARCH";
+
+        const string regexPatternCardOfTheDay = @"\/(?:" + regexCardOfTheDay + ") (.+)";
+        const string regexPatternSearch = @"\/(?:" + regexSearch + ") " + HipchatMessenger.regexNamedParameters;
 
         private static Timer updateTimer = null;
         private static Timer updateRotDTimer = null;
@@ -416,55 +420,10 @@ namespace HipchatMTGBot
                 html = "<table><tr><td>";
                 html += displayCard(card, 350, 250);
                 html += "</td>";
-
                 if (card.text != null)
                 {
-                    string cardText = card.text.Replace(".", ". ");
-                    cardText = cardText.Replace(". )", ".) ");
-                    cardText = cardText.Replace(". \"", ".\"");
-                    string[] text = cardText.Split(' ');
-
-                    int nextWord = 0;
-                    string widthAlignedText = "";
-                    while (nextWord < text.Length)
-                    {
-                        string nextLine = "<br/>";
-                        while (nextWord < text.Length && nextLine.Length < 50)
-                        {
-                            nextLine += text[nextWord];
-                            if (text[nextWord].EndsWith(".") || text[nextWord].EndsWith(".)"))
-                            {
-                                ++nextWord;
-                                break;
-                            }
-                            else
-                            {
-                                nextLine += " ";
-                            }
-                            ++nextWord;
-                        }
-                        widthAlignedText += nextLine;
-                    }
-
-                    List<string> ignoreList = new List<string>();
-
-                    foreach (Match match in Regex.Matches(widthAlignedText, regexPatternManaOrTapSymbol))
-                    {
-                        string value = match.Value;
-
-                        if (ignoreList.Contains(value))
-                        {
-                            continue;
-                        }
-                        ignoreList.Add(value);
-
-                        string switchSymbol = match.Value;
-                        symbolReplacement.TryGetValue(value, out switchSymbol);
-                        widthAlignedText = widthAlignedText.Replace(match.Value, switchSymbol);
-                    }
-                    html += String.Format("<td>{0}<br/><br/>{1}<br/><br/>{2}<br/></td>", card.type, card.rarity, widthAlignedText);
+                    html += getHtmlText(card);
                 }
-
                 html += "</tr></table>";
             }
             else
@@ -515,11 +474,67 @@ namespace HipchatMTGBot
             return "Card Not Recognized. Did you mean?..." + FuzzyMatch.BestMatch2(cardJson, cardName);
         }
 
+        private static string getHtmlText(Card card)
+        {
+            if (card.text == null)
+            {
+                return "";
+            }
+
+            string cardText = card.text.Replace(".", ". ");
+            cardText = cardText.Replace(". )", ".) ");
+            cardText = cardText.Replace(". \"", ".\"");
+            string[] text = cardText.Split(' ');
+
+            int nextWord = 0;
+            string widthAlignedText = "";
+            while (nextWord < text.Length)
+            {
+                string nextLine = "<br/>";
+                while (nextWord < text.Length && nextLine.Length < 50)
+                {
+                    nextLine += text[nextWord];
+                    if (text[nextWord].EndsWith(".") || text[nextWord].EndsWith(".)"))
+                    {
+                        ++nextWord;
+                        break;
+                    }
+                    else
+                    {
+                        nextLine += " ";
+                    }
+                    ++nextWord;
+                }
+                widthAlignedText += nextLine;
+            }
+
+            List<string> ignoreList = new List<string>();
+
+            foreach (Match match in Regex.Matches(widthAlignedText, regexPatternManaOrTapSymbol))
+            {
+                string value = match.Value;
+
+                if (ignoreList.Contains(value))
+                {
+                    continue;
+                }
+                ignoreList.Add(value);
+
+                string switchSymbol = match.Value;
+                symbolReplacement.TryGetValue(value, out switchSymbol);
+                widthAlignedText = widthAlignedText.Replace(match.Value, switchSymbol);
+            }
+
+            return String.Format("<td>{0}<br/><br/>{1}<br/><br/>{2}<br/></td>", card.type, card.rarity, widthAlignedText);
+        }
+
         public static Dictionary<string, string> GetHelp(ref Dictionary < string, string> items)
         {
-            items.Add("{{<card name>}}", "Look up a specific card name");
-            items.Add("{{<partial card name>:<maxtodisplay>:<maxcolumns>}}", "Look up a (partial) card name and return up to Min(21, maxtodisplay) items across Min(10, columns) columns.");
-            items.Add("((<set name>))", "Cards searched for on the same line will look up in the specific set.  This uses exact matching on the set name.");
+            items.Add(@"{{<card name>}}", "Look up a specific card name");
+            items.Add(@"{{<partial card name>:<maxtodisplay>:<maxcolumns>}}", @"Look up a (partial) card name and return up to Min(21, maxtodisplay) items across Min(10, columns) columns.");
+            items.Add(@"((<set name>))", @"Cards searched for on the same line will look up in the specific set.  This uses exact matching on the set name.");
+            items.Add(@"/" + regexSearch + " type|colour|cmc|manacost|supertype|name|text=<value>", @"Search for a card matching all the search parameters given.  Note you can only search for one of each type of param ");
+            items.Add(@"/" + regexCardOfTheDay + @" show|score|<your guess>", @"Display score, show the current CotD (if any!) or take a guess at the current CotD!");
             return items;
         }
 
@@ -631,16 +646,24 @@ namespace HipchatMTGBot
                 }
                 else if (pair.Key == "supertypes")
                 {
-                    if (!card.supertypes.Contains(pair.Value, StringComparer.CurrentCultureIgnoreCase))
+                    string[] types = pair.Value.Split(',');
+                    foreach(string type in types)
                     {
-                        return false;
+                        if (!card.supertypes.Contains(type, StringComparer.CurrentCultureIgnoreCase))
+                        {
+                            return false;
+                        }
                     }
                 }
                 else if (pair.Key == "types")
                 {
-                    if (!card.types.Contains(pair.Value, StringComparer.CurrentCultureIgnoreCase))
+                    string[] types = pair.Value.Split(',');
+                    foreach (string type in types)
                     {
-                        return false;
+                        if (!card.types.Contains(type, StringComparer.CurrentCultureIgnoreCase))
+                        {
+                            return false;
+                        }
                     }
                 }
                 else if (pair.Key == "text")
@@ -690,18 +713,32 @@ namespace HipchatMTGBot
             }
             string returnVal = "<table>";
             int count = 0;
-
             foreach (Card card in cardsFound.Values.OrderByDescending(p=>p.multiverseid))
             {
-                returnVal += "<tr><td>";
-                returnVal += displayCard(card, 350, 250);
-                returnVal += "</td></tr>";
-
-                if(++count > 10)
+                if(count%3 == 0)
                 {
+                    returnVal += "<tr>";
+                }
+                returnVal += "<td>";
+                returnVal += displayCard(card, 210, 150);
+                returnVal += "</td>";
+
+                if (search.ContainsKey("display") && search["display"] == "full")
+                {
+                    returnVal += getHtmlText(card);
+                }
+                ++count;
+
+
+                if(count >= 9)
+                {
+                    returnVal += "</tr>";
                     break;
                 }
-
+                else if (count % 3 == 0)
+                {
+                    returnVal += "</tr>";
+                }
             }
             returnVal += "</table>";
             return returnVal;

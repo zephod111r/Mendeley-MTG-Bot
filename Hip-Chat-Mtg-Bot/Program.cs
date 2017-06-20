@@ -77,7 +77,7 @@ namespace HipchatMTGBot
 
             foreach (var item in helpItems)
             {
-                helpString += $"<tr><td>{item.Key}</td><td>\t</td><td>{item.Value}</td></tr>";
+                helpString += $"<tr><td>{item.Key}</td><td>\t</td><td>{item.Value}</td></tr><tr><td><br></td></tr>";
             }
             helpString += $"</table>";
 

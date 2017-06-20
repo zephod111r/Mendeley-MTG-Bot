@@ -191,8 +191,8 @@ namespace HipchatMTGBot
 
         public static Dictionary<string, string> GetHelp(ref Dictionary<string, string> items)
         {
-            items.Add("/" + regexAsk + @" question=""<your question>"" ?duration=<duration in seconds> ?answers=<answerchoices>", @"question is the question you are asking<br>duration is Max(3600, Min(300, duration))<br>answerchoices is a comma seperated list of potential choices. For answers with spaces double quotes are required ""Like this""");
-            items.Add("/" + regexVote + @" <yourchoice>", @"yourchoice must exactly match one of the questions possible answers.");
+            items.Add(@"/" + regexAsk + " question=\"<your question>\" duration=<duration in seconds> answers=<answerchoices>", @"(required) question is the question you are asking<br>(optional) duration is Max(3600, Min(300, duration))<br>(optional)answerchoices is a comma seperated list of potential choices. For answers with spaces double quotes are required ""Like this""");
+            items.Add(@"/" + regexVote + " <yourchoice>", @"(required) yourchoice must exactly match one of the questions possible answers.");
             return items;
         }
              
