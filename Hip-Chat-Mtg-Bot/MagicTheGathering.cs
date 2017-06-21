@@ -109,6 +109,15 @@ namespace HipchatMTGBot
 
         public MagicTheGathering()
         {
+            if (!Directory.Exists("cards"))
+            {
+                Directory.CreateDirectory("cards");
+            }
+            if (!Directory.Exists("cropped"))
+            {
+                Directory.CreateDirectory("cropped");
+            }
+
             //load jsonData and load list of cards currently mentioned without sending a billion notifications
             UpdateAndLoadData(null);
             Program.Messenger.Handle(regexPatternSet, setSetToUse);
@@ -174,8 +183,7 @@ namespace HipchatMTGBot
 
         private static string displayCard(Card card, int height, int width)
         {
-            var cardImg = "<img src=\"http://gatherer.wizards.com/Handlers/Image.ashx?multiverseid=" + card.multiverseid + "&amp;type=card\" height=\"" + height + "\" width=\"" + width + "\">";
-
+            var cardImg = "<img src=\"" + prepareCardImage(card) + "\" height=\"" + height + "\" width=\"" + width + "\">";
             return string.Format(@"<a href=""http://gatherer.wizards.com/Pages/Card/Details.aspx?name={0}"">{1}<br/>{2}</a>",
                     HttpUtility.UrlEncode(card.name), card.name, cardImg);
         }
@@ -191,34 +199,71 @@ namespace HipchatMTGBot
         
         private static string uploadCardImage(Card card, Image src)
         {
-            src.Save(HttpUtility.UrlEncode(card.name) + ".jpeg");
-            return Program.AzureStorage.Upload(HttpUtility.UrlEncode(card.name) + ".jpeg", "rotd");
+            string name = HttpUtility.UrlEncode(card.name) + ".jpeg";
+            src.Save("cards/" + name);
+            return Program.AzureStorage.Upload(name, "cards");
         }
         
         private static string uploadCroppedCardImage(Card card, Image src)
         {
-            string cardName = HttpUtility.UrlEncode(Guid.NewGuid().ToString()) + ".jpeg";
-            Bitmap target = new Bitmap(175, 134);
+            string cardName = HttpUtility.UrlEncode(card.name.GetHashCode().ToString() + ".jpeg");
+            Bitmap target = new Bitmap(170, 130);
             if (src != null)
             {
                 using (Graphics g = Graphics.FromImage(target))
                 {
                     g.DrawImage(src, new Rectangle(0, 0, target.Width, target.Height),
-                                     new Rectangle(32, 43, target.Width, target.Height),
+                                     new Rectangle(28, 40, target.Width, target.Height),
                                      GraphicsUnit.Pixel);
                 }
-                target.Save(cardName);
+                target.Save("cropped/" + cardName);
             }
-            return Program.AzureStorage.Upload(cardName, "cotd");
+            return Program.AzureStorage.Upload(cardName, "cropped");
         }
 
-        private static string prepareCardImage(Card card)
+        private static string prepareCardImage(Card card, bool showCropped = false)
         {
-            string imageSrc = @"<!DOCTYPE html><html lang=""en"" xmlns=""http://www.w3.org/1999/xhtml""><head><meta charset=""utf-8"" /><title></title></head><body><img src=http://gatherer.wizards.com/Handlers/Image.ashx?multiverseid=" + card.multiverseid + "&amp;type=card /></body></html>";
-            Image src = TheArtOfDev.HtmlRenderer.WinForms.HtmlRender.RenderToImage(imageSrc);
+            string name = HttpUtility.UrlEncode(card.name) + ".jpeg";
+            Image src = null;
+            string url = "";
+            try
+            {
+                src = Image.FromFile("cards/" + name);
+                url = Program.AzureStorage.IsBlobPresent(name, "cards");
+            }
+            catch (Exception)
+            {
 
-            uploadCardImage(card, src);
-            return uploadCroppedCardImage(card, src);
+            }
+
+            if (src == null || url == "")
+            {
+                try
+                {
+                    string imageSrc = @"<!DOCTYPE html><html lang=""en"" xmlns=""http://www.w3.org/1999/xhtml""><head><meta charset=""utf-8"" /><title></title></head><body style=""margin:0px;padding:0px;border-radius:5px;background-color:transparent;""><img src=http://gatherer.wizards.com/Handlers/Image.ashx?multiverseid=" + card.multiverseid + @"&amp;type=card style=""margin:0px;padding:0px;border-radius:5px;background-color:transparent;"" width=223 height=311 /></body></html>";
+                    src = TheArtOfDev.HtmlRenderer.WinForms.HtmlRender.RenderToImage(imageSrc);
+                    url = uploadCardImage(card, src);
+                }
+                catch (Exception) { }
+            }
+
+            if (showCropped == true)
+            {
+                try
+                {
+                    string cardName = HttpUtility.UrlEncode(card.name.GetHashCode().ToString() + ".jpeg");
+                    url = Program.AzureStorage.IsBlobPresent(cardName, "cropped");
+                    if (url.Equals("") || File.Exists("cards/" + HttpUtility.UrlEncode(card.name) + ".jpeg") || Program.AzureStorage.Download(name, "cards"))
+                    { 
+                        src = Image.FromFile("cards/" + HttpUtility.UrlEncode(card.name) + ".jpeg");
+                        url = uploadCroppedCardImage(card, src);
+                    }
+                }
+                catch (Exception)
+                { }
+            }
+
+            return url;
         }
 
         private static void DisplayRareOfTheDay(Object o)
@@ -251,9 +296,7 @@ namespace HipchatMTGBot
                 {
                     continue;
                 }
-
-                prepareCardImage(todisplay);
-
+                
                 codUsedCards.Add(todisplay.name.ToUpper());
 
                 var cardData = "MTG Bot - Card of the day<br/>" + GenerateCardData(todisplay.name, set.name);
@@ -320,7 +363,7 @@ namespace HipchatMTGBot
                 Card todisplay = rareMythic.ElementAt(index);
 
                 CotD = new CotD();
-                CotD.display = "MTG Bot - Card of the day<br/><img src=" + prepareCardImage(todisplay) + " />";
+                CotD.display = "MTG Bot - Card of the day<br/><img src=" + prepareCardImage(todisplay, true) + " />";
                 CotD.card = todisplay;
 
                 codUsedCards.Add(todisplay.name.ToUpper());
@@ -432,7 +475,7 @@ namespace HipchatMTGBot
             {
                 card = latestCardSet.cards.Last(c => c.name.ToUpper() == cardName.ToUpper());
                 html = "<table><tr><td>";
-                html += displayCard(card, 350, 250);
+                html += displayCard(card, 311, 223);
                 html += "</td>";
                 if (card.text != null)
                 {
@@ -451,7 +494,7 @@ namespace HipchatMTGBot
                 if (cards == null)
                     cards = FuzzyMatch.FuzzyMatch2(cardJson, cardName, numResults);
                 card = cards[0].card;
-                html += displayCard(card, 350, 250);
+                html += displayCard(card, 311, 223);
                 longForm = true;
             }
 
@@ -630,7 +673,7 @@ namespace HipchatMTGBot
 
             if (cardName.ToLower().Equals( CotD.card.name.ToLower()))
             {
-                string ret = requestingUser + " Success<br>" + displayCard(CotD.card, 350, 250);
+                string ret = requestingUser + " Success<br>" + displayCard(CotD.card, 311, 223);
 
                 List<Player> players = new List<Player>();
                 Program.AzureStorage.Populate<Player>(out players, TableName, Program.Messenger.Room);

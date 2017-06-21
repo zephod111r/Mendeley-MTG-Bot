@@ -76,14 +76,33 @@ namespace HipchatMTGBot
             }
         }
 
-        public string Upload(string file, string table)
+        public string Upload(string name, string table)
         {
-            CloudBlockBlob blockBlob = EnsureBlobPresence(table).GetBlockBlobReference(file);
-            using (var fileStream = System.IO.File.OpenRead(file))
+            CloudBlockBlob blockBlob = EnsureBlobPresence(table).GetBlockBlobReference(name);
+            using (var fileStream = System.IO.File.OpenRead(table + "/" + name))
             {
                 blockBlob.UploadFromStream(fileStream);
             }
             return blockBlob.Uri.ToString();
+        }
+
+        public string IsBlobPresent(string name, string table)
+        {
+            CloudBlockBlob blockBlob = EnsureBlobPresence(table).GetBlockBlobReference(name);
+            if (blockBlob.Exists())
+                return blockBlob.Uri.ToString();
+            return "";
+        }
+
+        public bool Download(string name, string table)
+        {
+            CloudBlockBlob blockBlob = EnsureBlobPresence(table).GetBlockBlobReference(name);
+            if (blockBlob.Exists())
+            {
+                blockBlob.DownloadToFile(table + "/" + name, System.IO.FileMode.Create);
+                return true;
+            }
+            return false;
         }
 
         public void UploadTableData(ITableEntity element, string tableName)
