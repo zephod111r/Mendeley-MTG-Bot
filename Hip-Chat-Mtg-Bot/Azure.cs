@@ -36,11 +36,13 @@ namespace HipchatMTGBot
         {
             try
             {
-                Blobs[blobName] = BlobClient.GetContainerReference(blobName);
-                Blobs[blobName].CreateIfNotExists();
+                string fixedBlobName = blobName.ToLower();
+                fixedBlobName = fixedBlobName.Replace("+", "-");
+                Blobs[fixedBlobName] = BlobClient.GetContainerReference(fixedBlobName);
+                Blobs[fixedBlobName].CreateIfNotExists();
                 var blobPerm = new BlobContainerPermissions();
                 blobPerm.PublicAccess = BlobContainerPublicAccessType.Container;
-                Blobs[blobName].SetPermissions(blobPerm);
+                Blobs[fixedBlobName].SetPermissions(blobPerm);
             }
             catch (StorageException err)
             {
@@ -76,10 +78,10 @@ namespace HipchatMTGBot
             }
         }
 
-        public string Upload(string name, string table)
+        public string Upload(string name, string table, string fileroot)
         {
-            CloudBlockBlob blockBlob = EnsureBlobPresence(table).GetBlockBlobReference(name);
-            using (var fileStream = System.IO.File.OpenRead(table + "/" + name))
+            CloudBlockBlob blockBlob = EnsureBlobPresence(table).GetBlockBlobReference(name.ToLower());
+            using (var fileStream = System.IO.File.OpenRead(fileroot + "/" + table + "/" + name))
             {
                 blockBlob.UploadFromStream(fileStream);
             }
@@ -88,18 +90,18 @@ namespace HipchatMTGBot
 
         public string IsBlobPresent(string name, string table)
         {
-            CloudBlockBlob blockBlob = EnsureBlobPresence(table).GetBlockBlobReference(name);
+            CloudBlockBlob blockBlob = EnsureBlobPresence(table).GetBlockBlobReference(name.ToLower());
             if (blockBlob.Exists())
                 return blockBlob.Uri.ToString();
             return "";
         }
 
-        public bool Download(string name, string table)
+        public bool Download(string set, string name, string table)
         {
-            CloudBlockBlob blockBlob = EnsureBlobPresence(table).GetBlockBlobReference(name);
+            CloudBlockBlob blockBlob = EnsureBlobPresence(table).GetBlockBlobReference(name.ToLower());
             if (blockBlob.Exists())
             {
-                blockBlob.DownloadToFile(table + "/" + name, System.IO.FileMode.Create);
+                blockBlob.DownloadToFile(table + "/" + set + "/" + name, System.IO.FileMode.Create);
                 return true;
             }
             return false;
