@@ -50,7 +50,7 @@ namespace HipchatMTGBot
         static void Main(string[] args)
         {
             AzureStorage = new Azure();
-            //Messenger = new HipchatMessenger();
+            Messenger = new HipchatMessenger();
             ParseArguments(args);
             CardManager = new MagicTheGathering();
             Vote.Init();

@@ -38,11 +38,14 @@ namespace HipchatMTGBot
             {
                 string fixedBlobName = blobName.ToLower();
                 fixedBlobName = fixedBlobName.Replace("+", "-");
-                Blobs[fixedBlobName] = BlobClient.GetContainerReference(fixedBlobName);
-                Blobs[fixedBlobName].CreateIfNotExists();
+                fixedBlobName = fixedBlobName.Replace(".", "");
+                fixedBlobName = fixedBlobName.Replace("(", "");
+                fixedBlobName = fixedBlobName.Replace(")", "");
+                Blobs[blobName] = BlobClient.GetContainerReference(fixedBlobName);
+                Blobs[blobName].CreateIfNotExists();
                 var blobPerm = new BlobContainerPermissions();
                 blobPerm.PublicAccess = BlobContainerPublicAccessType.Container;
-                Blobs[fixedBlobName].SetPermissions(blobPerm);
+                Blobs[blobName].SetPermissions(blobPerm);
             }
             catch (StorageException err)
             {
@@ -91,19 +94,18 @@ namespace HipchatMTGBot
         public string IsBlobPresent(string name, string table)
         {
             CloudBlockBlob blockBlob = EnsureBlobPresence(table).GetBlockBlobReference(name.ToLower());
-            if (blockBlob.Exists())
-                return blockBlob.Uri.ToString();
-            return "";
+            return blockBlob.Uri.ToString();
         }
 
-        public bool Download(string set, string name, string table)
+        public bool Download(string set, string name, string rootName)
         {
-            CloudBlockBlob blockBlob = EnsureBlobPresence(table).GetBlockBlobReference(name.ToLower());
-            if (blockBlob.Exists())
+            CloudBlockBlob blockBlob = EnsureBlobPresence(set).GetBlockBlobReference(name.ToLower());
+            try
             {
-                blockBlob.DownloadToFile(table + "/" + set + "/" + name, System.IO.FileMode.Create);
+                blockBlob.DownloadToFile(rootName + "/" + set + "/" + name, System.IO.FileMode.Create);
                 return true;
             }
+            catch (Exception) { }
             return false;
         }
 
