@@ -168,6 +168,7 @@ namespace HipchatMTGBot
             Program.Messenger.Handle(regexPatternSearch, doSearch);
             DisplayRareOfTheDay(null);
             DisplayCardOfTheDay(null);
+            DisplayCardOfTheDay(null);
         }
 
         private string doDisplayRulings(string cardName, string userName)
@@ -635,18 +636,13 @@ namespace HipchatMTGBot
             return "Card Not Recognized. Did you mean?..." + FuzzyMatch.BestMatch2(cardJson, cardName);
         }
 
-        private static string getHtmlText(Card card)
+        private static string convertToHtmlSymbols(string inputStr)
         {
-            if (card.text == null)
-            {
-                return "";
-            }
-
-            string widthAlignedText = widthAlign(card.text);
-
             List<string> ignoreList = new List<string>();
 
-            foreach (Match match in Regex.Matches(widthAlignedText, regexPatternManaOrTapSymbol))
+            string input = inputStr;
+
+            foreach (Match match in Regex.Matches(input, regexPatternManaOrTapSymbol))
             {
                 string value = match.Value;
 
@@ -658,10 +654,24 @@ namespace HipchatMTGBot
 
                 string switchSymbol = match.Value;
                 symbolReplacement.TryGetValue(value, out switchSymbol);
-                widthAlignedText = widthAlignedText.Replace(match.Value, switchSymbol);
+                input = input.Replace(match.Value, switchSymbol);
             }
 
-            return String.Format("<td>{0}<br/><br/>{1}<br/><br/>{2}<br/></td>", card.type, card.rarity, widthAlignedText);
+            return input;
+        }
+
+        private static string getHtmlText(Card card)
+        {
+            if (card.text == null)
+            {
+                return "";
+            }
+
+            string widthAlignedText = widthAlign(card.text);
+
+            widthAlignedText = convertToHtmlSymbols(widthAlignedText);
+
+            return String.Format("<td>{0}<br>{1}<br/><br/>{2}<br/><br/>{3}<br/></td>", convertToHtmlSymbols(card.manaCost), card.type, card.rarity, widthAlignedText);
         }
 
         private static string widthAlign(string cardText, int width = 50)
@@ -797,6 +807,10 @@ namespace HipchatMTGBot
             return requestingUser + " " + cardName + " (Incorrect)";
         }
 
+        private static string[] listChoices = { "printings", "colouridentity", "type", "types", "subtype", "subtypes" };
+        private static string[] stringChoices = { "" };
+        private static string[] intChoices = { "cmc", "manacost" };
+
         private static bool doMatch(Card card, Dictionary<string, string> search)
         {
             foreach(KeyValuePair<string, string> pair in search)
@@ -824,14 +838,14 @@ namespace HipchatMTGBot
                         return false;
                     }
                 }
-                else if (pair.Key == "type")
+                else if (pair.Key == "type" || pair.Key == "types")
                 {
                     if (!card.type.ToLower().Contains(pair.Value))
                     {
                         return false;
                     }
                 }
-                else if (pair.Key == "printings")
+                else if (pair.Key == "printing" || pair.Key == "printings")
                 {
                     string[] values = pair.Value.Split(',');
                     foreach(string value in values)
@@ -842,7 +856,7 @@ namespace HipchatMTGBot
                         }
                     }
                 }
-                else if (pair.Key == "subtype")
+                else if (pair.Key == "subtype" || pair.Key == "subtypes")
                 {
                     string[] types = pair.Value.Split(',');
                     foreach(string type in types)
@@ -855,10 +869,15 @@ namespace HipchatMTGBot
                 }
                 else if (pair.Key == "types")
                 {
+                    if (card.types == null)
+                    {
+                        return false;
+                    }
+
                     string[] types = pair.Value.Split(',');
                     foreach (string type in types)
                     {
-                        if (card.types == null || !card.types.Contains(type, StringComparer.CurrentCultureIgnoreCase))
+                        if (!card.types.Contains(type, StringComparer.CurrentCultureIgnoreCase))
                         {
                             return false;
                         }
@@ -866,10 +885,15 @@ namespace HipchatMTGBot
                 }
                 else if (pair.Key == "colouridentity")
                 {
+                    if (card.colorIdentity == null)
+                    {
+                        return false;
+                    }
+
                     string[] types = pair.Value.Split(',');
                     foreach (string type in types)
                     {
-                        if (card.colorIdentity == null || !card.colorIdentity.Contains(type, StringComparer.CurrentCultureIgnoreCase))
+                        if (!card.colorIdentity.Contains(type, StringComparer.CurrentCultureIgnoreCase))
                         {
                             return false;
                         }
@@ -877,20 +901,33 @@ namespace HipchatMTGBot
                 }
                 else if (pair.Key == "text")
                 {
-                    if (card.text==null || !card.text.ToLower().Contains(pair.Value))
+                    if (card.text == null)
+                    {
+                        return false;
+                    }
+                    if (!card.text.ToLower().Contains(pair.Value))
                     {
                         return false;
                     }
                 }
-                else if (pair.Key == "colour")
+                else if (pair.Key == "colour" || pair.Key == "colours")
                 {
-                    if (card.colors == null && pair.Value != "none")
+                    if (card.colors == null && pair.Value == "none")
+                    {
+                        return true;
+                    }
+                    else if (card.colors == null)
                     {
                         return false;
                     }
-                    else if (card.colors!=null && !card.colors.Contains(pair.Value, StringComparer.CurrentCultureIgnoreCase))
+
+                    string[] values = pair.Value.Split(',');
+                    foreach (string value in values)
                     {
-                        return false;
+                        if (!card.colors.Contains(value, StringComparer.CurrentCultureIgnoreCase))
+                        {
+                            return false;
+                        }
                     }
                 }
             }
