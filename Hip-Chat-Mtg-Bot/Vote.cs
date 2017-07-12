@@ -11,7 +11,7 @@ namespace HipchatMTGBot
     {
         const string regexAsk = @"Ask|ask|ASK";
         const string regexVote = @"vote|Vote|VOTE";
-        const string regexPatternQuestion = @"\/(" + regexAsk + ") " + HipchatMessenger.regexNamedParameters;
+        const string regexPatternQuestion = @"^\/(" + regexAsk + ") " + HipchatMessenger.regexNamedParameters;
         const string regexPatternVote = @"^\/(?:" + regexVote + ") " + HipchatMessenger.regexParameters;
         private Timer timer = null;
 

@@ -8,6 +8,6 @@ namespace HipchatMTGBot
 {
     class Sets
     {       
-         public Dictionary<string, SetData> setData;       
+         public Dictionary<string, SetData> setData = null;       
     }
 }

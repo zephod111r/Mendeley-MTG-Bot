@@ -16,6 +16,7 @@ namespace HipchatMTGBot
         public const string regexParamSeparator = @"[:=]";
         public const string regexParamValue = @"(?:""(?:[^\n\r""]+)"")|[a-zA-Z0-9\\\/.,]+";
         public const string regexNamedParameters = @"(" + regexParamName + @")" + regexParamSeparator + @"(" + regexParamValue + @")";
+        public const string regexTableFlip = @"\(tableflip\)";
 
         public const string regexParameters = @"((?:(?:[\ ])"+ regexParamValue + @")+)";
         const string RegexPatternName = @" name:.+,";
@@ -253,6 +254,19 @@ namespace HipchatMTGBot
                     if (item.Message == null || item.Message.Contains(Topic))
                     {
                         continue;
+                    }
+
+                    bool cleanup = false;
+                    string cleanupMessage = "";
+                    foreach (Match match in Regex.Matches(item.Message, regexTableFlip))
+                    {
+                        cleanupMessage += "┬─┬ノ( º _ ºノ) ";
+                        cleanup = true;
+                    }
+
+                    if (cleanup)
+                    {
+                        SendMessage(cleanupMessage, RoomColors.Green);
                     }
 
                     // If it matches one of these it is a true match

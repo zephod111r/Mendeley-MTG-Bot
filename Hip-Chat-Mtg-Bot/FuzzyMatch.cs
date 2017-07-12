@@ -13,7 +13,7 @@ namespace HipchatMTGBot
         private const int MAXCARDNAME = 256;
         private static UInt16[,] d = new UInt16[MAXCARDNAME, MAXCARDNAME];
 
-        public static Card BestMatch2(Dictionary<string, SetData> cardJson, string cardname)
+        public static Card BestMatch(Dictionary<string, SetData> cardJson, string cardname)
         {
             int leastDistance = int.MaxValue;
             bool isSubstringMatch;
@@ -36,7 +36,7 @@ namespace HipchatMTGBot
             return match.card;
         }
 
-        public static CardResult[] FuzzyMatch2(Dictionary<string, SetData> cardJson, string cardname, int numMatches)
+        public static CardResult[] Match(Dictionary<string, SetData> cardJson, string cardname, int numMatches)
         {
             int curDistance;
             bool isSubStringMatch;

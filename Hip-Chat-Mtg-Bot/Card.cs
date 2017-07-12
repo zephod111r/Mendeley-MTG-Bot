@@ -8,32 +8,32 @@ namespace HipchatMTGBot
 {
     class Ruling
     {
-        public string date;
-        public string text;
+        public string date = null;
+        public string text = null;
     }
 
     class Card
     {
-        public string name;
-        public string manaCost;
-        public float cmc;
-        public List<string> colors;
-        public string type;
-        public List<string> subtypes;
-        public List<string> types;
-        public string rarity;
-        public string text;
-        public string flavor;
-        public string artist;
-        public string number;
-        public string power;
-        public string toughness;
-        public int multiverseid;
-        public string imageName;
-        public List<Ruling> rulings;
-        public string layout;
-        public List<string> printings;
-        public List<string> colorIdentity;
+        public string name = null;
+        public string manaCost = null;
+        public float cmc = 0.0f;
+        public List<string> colors = null;
+        public string type = null;
+        public List<string> subtypes = null;
+        public List<string> types = null;
+        public string rarity = null;
+        public string text = null;
+        public string flavor = null;
+        public string artist = null;
+        public string number = null;
+        public string power = null;
+        public string toughness = null;
+        public int multiverseid = 0;
+        public string imageName = null;
+        public List<Ruling> rulings = null;
+        public string layout = null;
+        public List<string> printings = null;
+        public List<string> colorIdentity = null;
     }
 
     class CardResult : IComparable
