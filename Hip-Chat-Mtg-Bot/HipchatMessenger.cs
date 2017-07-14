@@ -14,7 +14,7 @@ namespace HipchatMTGBot
         #region Const Values
         public const string regexParamName = @"[a-zA-Z0-9\-]+";
         public const string regexParamSeparator = @"[:=]";
-        public const string regexParamValue = @"(?:""(?:[^\n\r""]+)"")|[a-zA-Z0-9\\\/.,]+";
+        public const string regexParamValue = @"(?:""(?:[^\n\r""]+)"")|[a-zA-Z0-9\\\/.,{}]+";
         public const string regexNamedParameters = @"(" + regexParamName + @")" + regexParamSeparator + @"(" + regexParamValue + @")";
         public const string regexTableFlip = @"\(tableflip\)";
 

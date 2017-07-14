@@ -755,7 +755,7 @@ namespace HipchatMTGBot
                 }
                 else if (pair.Key == "manacost")
                 {
-                    if(!card.manaCost.ToLower().Contains(pair.Value))
+                    if(card.manaCost==null ||!card.manaCost.ToLower().Contains(pair.Value))
                     {
                         return false;
                     }
