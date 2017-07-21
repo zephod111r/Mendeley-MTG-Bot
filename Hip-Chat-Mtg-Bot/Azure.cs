@@ -127,6 +127,24 @@ namespace HipchatMTGBot
             }
         }
 
+        public void RemoveTableData(ITableEntity element, string tableName)
+        {
+            CloudTable table = EnsureTablePresence(tableName);
+
+            try
+            {
+                var insertOperation = TableOperation.Delete(element);
+
+                // Execute the insert operation.
+                TableResult res = table.Execute(insertOperation);
+
+            }
+            catch (StorageException err)
+            {
+                Console.Out.WriteLineAsync(err.Message);
+            }
+        }
+
         public void Populate<typeOfEntity>(out List<typeOfEntity> elements, string tableName, string partitionName)
             where typeOfEntity : TableEntity, new()
         {
@@ -141,6 +159,22 @@ namespace HipchatMTGBot
             {
                 Console.Out.WriteLineAsync(err.Message);
                 elements = new List<typeOfEntity>();
+            }
+        }
+
+        public typeOfEntity Populate<typeOfEntity>(string tableName, string queryString)
+            where typeOfEntity : TableEntity, new()
+        {
+            try
+            {
+                CloudTable table = EnsureTablePresence(tableName);
+                TableQuery<typeOfEntity> query = new TableQuery<typeOfEntity>().Where(queryString);
+                return table.ExecuteQuery<typeOfEntity>(query).FirstOrDefault();
+            }
+            catch (StorageException err)
+            {
+                Console.Out.WriteLineAsync(err.Message);
+                return null;
             }
         }
     }

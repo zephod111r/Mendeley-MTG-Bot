@@ -10,17 +10,17 @@ using System.Threading;
 using HipchatApiV2.Enums;
 using Newtonsoft.Json;
 using System.Web;
-using System.Drawing;
-using TheArtOfDev.HtmlRenderer;
-using TheArtOfDev.HtmlRenderer.WinForms;
+using Microsoft.WindowsAzure.Storage.Table;
 
 
 namespace HipchatMTGBot
 {
     class MagicTheGathering
     {
-        private const string TableName = "cotdscore";
-        
+        private const string CotDScoreTableName = "cotdscore";
+        private const string CotDTableName = "cotdcards";
+        private const string RotDTableName = "rotd";
+
         public static string[] setImageFilter = {
             "Collector's Edition",
             "International Collector's Edition",
@@ -163,7 +163,7 @@ namespace HipchatMTGBot
 
         private static string displayCard(SetData set, Card card, int height, int width)
         {
-            var cardImg = "<img src=\"" + prepareCardImage(set, card) + "\" height=\"" + height + "\" width=\"" + width + "\">";
+            var cardImg = "<img src=\"" + ImageUtility.prepareCardImage(set, card) + "\" height=\"" + height + "\" width=\"" + width + "\">";
             return string.Format(@"<a href=""http://gatherer.wizards.com/Pages/Card/Details.aspx?name={0}"">{1}<br/>{2}</a>",
                     HttpUtility.UrlEncode(card.name), card.name, cardImg);
         }
@@ -175,116 +175,6 @@ namespace HipchatMTGBot
                 WebClient.DownloadFile("https://www.mkmapi.eu/ws/v2.0/products/find?search=" + HttpUtility.UrlEncode(card.name) + "&exact=true", HttpUtility.UrlEncode(card.name) + ".json");
             }
             return 0;
-        }
-
-        private static string uploadCardImage(SetData set, Card card, Image src)
-        {
-            string setName = HttpUtility.UrlEncode(set.name).Replace("%", "");
-
-            if (!Directory.Exists("cards/" + setName))
-            {
-                Directory.CreateDirectory("cards/" + setName);
-            }
-
-            string name = HttpUtility.UrlEncode(card.name) + ".jpeg";
-            src.Save("cards/" + setName + "/" + name);
-            return Program.AzureStorage.Upload(name, setName, "cards");
-        }
-
-        private static string uploadCroppedCardImage(Card card, Image src)
-        {
-            string cardName = HttpUtility.UrlEncode(card.name.GetHashCode().ToString() + ".jpeg");
-            Bitmap target = new Bitmap(170, 130);
-            if (src != null)
-            {
-                using (Graphics g = Graphics.FromImage(target))
-                {
-                    g.DrawImage(src, new Rectangle(0, 0, target.Width, target.Height),
-                                     new Rectangle(28, 40, target.Width, target.Height),
-                                     GraphicsUnit.Pixel);
-                }
-                target.Save("cropped/" + cardName);
-            }
-            return Program.AzureStorage.Upload(cardName, "cropped", ".");
-        }
-
-        private static string prepareCardImage(SetData set, Card card, bool showCropped = false)
-        {
-            Image src = null;
-            string url = "";
-
-            string setName = HttpUtility.UrlEncode(set.name).Replace("%", "");
-            string name = HttpUtility.UrlEncode(card.name) + ".jpeg";
-            string filename = "cards/" + setName + "/" + name;
-
-            if (!Directory.Exists("cards/" + setName))
-            {
-                Directory.CreateDirectory("cards/" + setName);
-            }
-            
-            try
-            {
-                if (File.Exists(filename))
-                {
-                    src = Image.FromFile(filename);
-                    url = Program.AzureStorage.IsBlobPresent(name, setName);
-                }
-            }
-            catch (Exception){}
-
-            if (src == null || url == "")
-            {
-                try
-                {
-                    if (src == null)
-                    {
-                        if (url != "")
-                        {
-                            try
-                            {
-                                Program.AzureStorage.Download(setName, name, "cards");
-                                if (File.Exists(filename))
-                                {
-                                    src = Image.FromFile(filename);
-                                }
-                            } catch(Exception)
-                            {
-                                src = null;
-                            }
-                        }
-                        
-                        if(src == null)
-                        {
-                            string imageSrc = @"<!DOCTYPE html><html lang=""en"" xmlns=""http://www.w3.org/1999/xhtml""><head><meta charset=""utf-8"" /><title></title></head><body style=""margin:0px;padding:0px;border-radius:5px;background-color:transparent;""><img src=http://gatherer.wizards.com/Handlers/Image.ashx?multiverseid=" + card.multiverseid + @"&amp;type=card style=""margin:0px;padding:0px;border-radius:5px;background-color:transparent;"" width=223 height=311 /></body></html>";
-                            src = TheArtOfDev.HtmlRenderer.WinForms.HtmlRender.RenderToImage(imageSrc);
-                        }
-                    }
-
-                    if (url == "")
-                    {
-                        url = uploadCardImage(set, card, src);
-                    }
-                }
-                catch (Exception) { }
-            }
-
-            if (showCropped == true)
-            {
-                try
-                {
-                    string cardName = HttpUtility.UrlEncode(card.name.GetHashCode().ToString() + ".jpeg");
-                    url = Program.AzureStorage.IsBlobPresent(cardName, "cropped");
-                    if (url.Equals("") || File.Exists("cards/" + setName + "/" + HttpUtility.UrlEncode(card.name) + ".jpeg") || Program.AzureStorage.Download(setName, name, "cards"))
-                    {
-                        src = Image.FromFile("cards/" + setName + "/" + HttpUtility.UrlEncode(card.name) + ".jpeg");
-                        url = uploadCroppedCardImage(card, src);
-                    }
-                }
-                catch (Exception)
-                { }
-            }
-
-            return url;
         }
 
         private static void DisplayRareOfTheDay(Object o)
@@ -310,14 +200,22 @@ namespace HipchatMTGBot
 
                     int index = localRandom.Next() % rareMythic.Count;
                     Card todisplay = rareMythic.ElementAt(index);
-
-                    string layout = todisplay.layout;
-                    if (string.Equals(layout, "normal", StringComparison.CurrentCultureIgnoreCase))
+                    
+                    string query = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Program.Messenger.Room);
+                    query = TableQuery.CombineFilters(query, TableOperators.And, TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, todisplay.name));
+                    RotDCard nameAlreadyUsed = Program.AzureStorage.Populate<RotDCard>(RotDTableName, query);
+                    if(nameAlreadyUsed != null)
                     {
                         continue;
                     }
 
                     codUsedCards.Add(todisplay.name.ToUpper());
+
+                    RotDCard card = new RotDCard();
+                    card.PartitionKey = Program.Messenger.Room;
+                    card.RowKey = todisplay.name;
+                    card.DateShown = DateTime.Now;
+                    Program.AzureStorage.UploadTableData(card, RotDTableName);
 
                     var cardData = "MTG Bot - Card of the day<br/>" + GenerateCardData(todisplay.name, set.name);
                     Program.Messenger.SendMessage(cardData, RoomColors.Yellow);
@@ -372,37 +270,62 @@ namespace HipchatMTGBot
 
             try
             {
-                updateCotDTimer = null;
-
-                bool cardOfTheDayFound = false;
-
-                List<SetData> setsToLookin = cardJson.Values.Where(p => !setImageFilter.Contains(p.name, StringComparer.InvariantCultureIgnoreCase)).ToList();
-
-                while (!cardOfTheDayFound)
+                if (updateCotDTimer != null)
                 {
-                    int setIndex = localRandom.Next() % setsToLookin.Count;
+                    updateCotDTimer = null;
 
-                    SetData set = setsToLookin.ElementAt(setIndex);
-                    List<Card> rareMythic = set.cards.FindAll(p => p.rarity.ToUpper().Contains("RARE"));
-                    rareMythic.RemoveAll(c => codUsedCards.Contains(c.name.ToUpper()));
+                    bool cardOfTheDayFound = false;
 
-                    if (rareMythic.Count == 0)
+                    List<SetData> setsToLookin = cardJson.Values.Where(p => !setImageFilter.Contains(p.name, StringComparer.InvariantCultureIgnoreCase)).ToList();
+
+                    while (!cardOfTheDayFound)
                     {
-                        continue;
+                        int setIndex = localRandom.Next() % setsToLookin.Count;
+
+                        SetData set = setsToLookin.ElementAt(setIndex);
+                        List<Card> rareMythic = set.cards.FindAll(p => p.rarity.ToUpper().Contains("RARE"));
+                        rareMythic.RemoveAll(c => codUsedCards.Contains(c.name.ToUpper()));
+
+                        if (rareMythic.Count == 0)
+                        {
+                            continue;
+                        }
+
+                        int index = localRandom.Next() % rareMythic.Count;
+                        Card todisplay = rareMythic.ElementAt(index);
+
+                        string layout = todisplay.layout;
+                        if (!string.Equals(layout, "normal", StringComparison.CurrentCultureIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        string query = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Program.Messenger.Room);
+                        query = TableQuery.CombineFilters(query, TableOperators.And, TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, todisplay.name));
+                        CotDCard nameAlreadyUsed = Program.AzureStorage.Populate<CotDCard>(CotDTableName, query);
+                        if (nameAlreadyUsed != null)
+                        {
+                            continue;
+                        }
+
+                        CotDCard card = new CotDCard();
+                        card.PartitionKey = Program.Messenger.Room;
+                        card.RowKey = todisplay.name;
+                        card.DateShown = DateTime.Now;
+                        card.GuessingPlayer = null;
+                        card.DateGuessed = DateTime.Now;
+                        Program.AzureStorage.UploadTableData(card, CotDTableName);
+
+                        cardOfTheDayFound = true;
+                        CotD = new CotD();
+                        CotD.display = "MTG Bot - Card of the day<br/><img src=" + ImageUtility.prepareCardImage(set, todisplay, true) + " />";
+                        CotD.card = todisplay;
+                        CotD.set = set;
+
+                        codUsedCards.Add(todisplay.name.ToUpper());
+
+                        Program.Messenger.SendMessage(CotD.display, RoomColors.Green);
                     }
-
-                    int index = localRandom.Next() % rareMythic.Count;
-                    Card todisplay = rareMythic.ElementAt(index);
-
-                    CotD = new CotD();
-                    CotD.display = "MTG Bot - Card of the day<br/><img src=" + prepareCardImage(set, todisplay, true) + " />";
-                    CotD.card = todisplay;
-                    CotD.set = set;
-
-                    codUsedCards.Add(todisplay.name.ToUpper());
-
-                    Program.Messenger.SendMessage(CotD.display, RoomColors.Green);
-                    cardOfTheDayFound = true;
                 }
             }
             catch (Exception) { }
@@ -493,7 +416,9 @@ namespace HipchatMTGBot
                 }
             }
 
-            var latestCardSet = cardJson.Values.LastOrDefault(q => q.cards.Any(p => p.name.ToUpper() == cardName.ToUpper() && !setImageFilter.Contains(p.name, StringComparer.InvariantCultureIgnoreCase)));
+            var containingSets = cardJson.Values.Where(q => q.cards.Any(p => p.name.ToLower() == cardName.ToLower()));
+
+            var latestCardSet = containingSets.OrderBy(p=>p.releaseDate).LastOrDefault();
             if (setData != "")
             {
                 var altLatestCardSet = cardJson.Values.LastOrDefault(q => q.cards.Any(p => p.name.ToUpper() == cardName.ToUpper()) && setData == q.name);
@@ -685,7 +610,7 @@ namespace HipchatMTGBot
             if (cardName.Equals("score", StringComparison.CurrentCultureIgnoreCase))
             {
                 List<Player> players = new List<Player>();
-                Program.AzureStorage.Populate<Player>(out players, TableName, Program.Messenger.Room);
+                Program.AzureStorage.Populate<Player>(out players, CotDScoreTableName, Program.Messenger.Room);
 
                 string ret = "Current Player Scores are:<br><table>";
 
@@ -712,10 +637,9 @@ namespace HipchatMTGBot
 
             if (modifiedCardName.Equals(cotdCardNameModified, StringComparison.CurrentCultureIgnoreCase))
             {
-                
-                List<Player> players = new List<Player>();
-                Program.AzureStorage.Populate<Player>(out players, TableName, Program.Messenger.Room);
-                Player player = players.Where(p => p.RowKey.Equals(requestingUser)).FirstOrDefault();
+                string query = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Program.Messenger.Room);
+                query = TableQuery.CombineFilters(query, TableOperators.And, TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, requestingUser));
+                Player player = Program.AzureStorage.Populate<Player>(CotDScoreTableName, query);
 
                 if(player == null)
                 {
@@ -726,9 +650,19 @@ namespace HipchatMTGBot
                 }
 
                 player.CotDScore += 1;
-
-                Program.AzureStorage.UploadTableData(player, TableName);
+                Program.AzureStorage.UploadTableData(player, CotDScoreTableName);
                 
+                string query2 = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Program.Messenger.Room);
+                query2 = TableQuery.CombineFilters(query2, TableOperators.And, TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, CotD.card.name));
+                CotDCard card = Program.AzureStorage.Populate<CotDCard>(CotDTableName, query2);
+
+                if (card != null)
+                {
+                    card.DateGuessed = DateTime.Now;
+                    card.GuessingPlayer = requestingUser;
+                    Program.AzureStorage.UploadTableData(card, CotDTableName);
+                }
+
                 string ret = requestingUser + " Success<br>" + displayCard(CotD.set, CotD.card, 311, 223);
                 CotD = null;
 
@@ -843,12 +777,10 @@ namespace HipchatMTGBot
                 }
                 else if (pair.Key == "colour" || pair.Key == "colours")
                 {
-                    if (card.colors == null && pair.Value == "none")
+                    if (card.colors == null)
                     {
-                        return true;
-                    }
-                    else if (card.colors == null)
-                    {
+                        if(pair.Value == "none")
+                            continue;
                         return false;
                     }
 
