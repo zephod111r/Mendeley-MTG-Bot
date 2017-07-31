@@ -217,7 +217,9 @@ namespace HipchatMTGBot
                     card.DateShown = DateTime.Now;
                     Program.AzureStorage.UploadTableData(card, RotDTableName);
 
-                    var cardData = "MTG Bot - Card of the day<br/>" + GenerateCardData(todisplay.name, set.name);
+                    List<SetData> sets = new List<SetData>();
+                    sets.Add(set);
+                    var cardData = "MTG Bot - Card of the day<br/>" + GenerateCardData(todisplay.name, sets);
                     Program.Messenger.SendMessage(cardData, RoomColors.Yellow);
                     cardOfTheDayFound = true;
                 }
@@ -366,7 +368,7 @@ namespace HipchatMTGBot
         }
 
 
-        private static string GenerateCardData(string cardData, string setData, bool showRulings=false)
+        private static string GenerateCardData(string cardData, List<SetData> setDataToUse, bool showRulings=false)
         {
             string cardName = "";
             int numResults = 3;
@@ -415,19 +417,13 @@ namespace HipchatMTGBot
                     }
                 }
             }
-
-            var containingSets = cardJson.Values.Where(q => q.cards.Any(p => p.name.ToLower() == cardName.ToLower()));
-
-            var latestCardSet = containingSets.OrderBy(p=>p.releaseDate).LastOrDefault();
-            if (setData != "")
+            
+            if (setDataToUse == null || setDataToUse.Where(s => s.cards.Where(c=> c.name.ToUpper() == cardName.ToUpper()).Count() != 0).Count() == 0)
             {
-                var altLatestCardSet = cardJson.Values.LastOrDefault(q => q.cards.Any(p => p.name.ToUpper() == cardName.ToUpper()) && setData == q.name);
-                if (altLatestCardSet != null)
-                {
-                    latestCardSet = altLatestCardSet;
-                }
+                setDataToUse = cardJson.Values.Where(q => q.cards.Any(p => p.name.ToLower() == cardName.ToLower())).ToList();
             }
-
+            
+            var latestCardSet = setDataToUse.OrderBy(p=>p.releaseDate).LastOrDefault();
             Card card = null;
 
             string html;
@@ -573,15 +569,19 @@ namespace HipchatMTGBot
             return items;
         }
 
-        public static string SetData
+        public static List<SetData> SetData
         { private get; set; }
 
         public static string setSetToUse(string setName, string requestingUser)
         {
             setName = setName.Replace("((", "");
             setName = setName.Replace("))", "");
-            SetData = setName;
-            return "<b>Cards from " + SetData + ":</b>";
+            SetData = cardJson.Values.Where(p=>(p.name == setName) || (p.code == setName)).ToList();
+            if (SetData != null && SetData.Count != 0)
+            {
+                return "<b>Attempting to display Cards from " + SetData.First().name + ":</b>";
+            }
+            return "<b>'Set' Filter Failed to Find " + setName + "</b>";
         }
 
         private static string getCard(string cardName, string requestingUser)
@@ -682,7 +682,7 @@ namespace HipchatMTGBot
             {
                 if (pair.Key == "name")
                 {
-                    if(!card.name.ToLower().Contains(pair.Value))
+                    if(card.name == null || !card.name.ToLower().Contains(pair.Value))
                     {
                         return false;
                     }
@@ -705,7 +705,7 @@ namespace HipchatMTGBot
                 }
                 else if (pair.Key == "type" || pair.Key == "types")
                 {
-                    if (!card.type.ToLower().Contains(pair.Value))
+                    if (card.type == null || !card.type.ToLower().Contains(pair.Value))
                     {
                         return false;
                     }
@@ -766,11 +766,7 @@ namespace HipchatMTGBot
                 }
                 else if (pair.Key == "text")
                 {
-                    if (card.text == null)
-                    {
-                        return false;
-                    }
-                    if (!card.text.ToLower().Contains(pair.Value))
+                    if (card.text == null || !card.text.ToLower().Contains(pair.Value))
                     {
                         return false;
                     }
@@ -779,7 +775,7 @@ namespace HipchatMTGBot
                 {
                     if (card.colors == null)
                     {
-                        if(pair.Value == "none")
+                        if (pair.Value == "none")
                             continue;
                         return false;
                     }
@@ -793,43 +789,52 @@ namespace HipchatMTGBot
                         }
                     }
                 }
+                else if (pair.Key == "rarity")
+                {
+                    if (card.rarity == null || card.rarity.ToLower() != pair.Value)
+                    {
+                        return false;
+                    }
+                }
             }
             return true;
         }
 
         private static string doSearch(Dictionary<string,string> search, string requestingUser)
         {
-            Dictionary<string, Card> cardsFound = new Dictionary<string, Card>();
+            Dictionary<Card, SetData> cardsFound = new Dictionary<Card, SetData>();
             foreach(SetData set in cardJson.Values)
             {
                 foreach(Card card in set.cards)
                 {
                     if(doMatch(card, search))
                     {
-                        if (!cardsFound.ContainsKey(card.name))
-                        {
-                            cardsFound.Add(card.name, card);
-                        }
-                        else
-                        {
-                            if(cardsFound[card.name].multiverseid < card.multiverseid)
-                            {
-                                cardsFound[card.name] = card;
-                            }
-                        }
+                        cardsFound.Add(card, set);
                     }
                 }
             }
             string returnVal = "<table>";
             int count = 0;
-            foreach (Card card in cardsFound.Values.OrderByDescending(p=>p.multiverseid))
+            List<string> cardsAlreadyDisplayed = new List<string>();
+
+            foreach (KeyValuePair<Card, SetData> cardPair in cardsFound.OrderByDescending(p=>p.Value.releaseDate))
             {
-                if(count%3 == 0)
+                Card card = cardPair.Key;
+                SetData set = cardPair.Value;
+
+                if(cardsAlreadyDisplayed.Contains(card.name))
+                {
+                    continue;
+                }
+
+                cardsAlreadyDisplayed.Add(card.name);
+
+                if (count%3 == 0)
                 {
                     returnVal += "<tr>";
                 }
                 returnVal += "<td>";
-                returnVal += displayCard(cardJson.Values.Where(p => p.cards.Contains(card)).First(), card, 210, 150);
+                returnVal += displayCard(set, card, 210, 150);
                 returnVal += "</td>";
 
                 if (search.ContainsKey("display") && search["display"] == "full")
