@@ -9,6 +9,10 @@ namespace HipchatMTGBot
 {
     class Player : TableEntity
     {
+        public int Version { get; set; }
         public int CotDScore { get; set; }
+        public DateTime LastCorrectGuess { get; set; }
+        public double RankScore { get; set; }
+        public DateTime CotDRequest { get; set; }
     }
 }

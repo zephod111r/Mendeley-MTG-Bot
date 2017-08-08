@@ -17,9 +17,11 @@ namespace HipchatMTGBot
 {
     class MagicTheGathering
     {
-        private const string CotDScoreTableName = "cotdscore";
+        private const string PlayerDataTable = "cotdscore";
         private const string CotDTableName = "cotdcards";
         private const string RotDTableName = "rotd";
+
+        private static double decayRateK = Math.Log(0.916666667) / (30.14 * 24 * 60 * 60 * 1000);
 
         public static string[] setImageFilter = {
             "Collector's Edition",
@@ -607,20 +609,41 @@ namespace HipchatMTGBot
 
         private static string doCardOfTheDay(string cardName, string requestingUser)
         {
-            if (cardName.Equals("score", StringComparison.CurrentCultureIgnoreCase))
+            if(cardName.Equals("new", StringComparison.CurrentCultureIgnoreCase) && CotD == null)
+            {
+                string query = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Program.Messenger.Room);
+                query = TableQuery.CombineFilters(query, TableOperators.And, TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, requestingUser));
+                Player player = Program.AzureStorage.Populate<Player>(PlayerDataTable, query);
+                if (player == null || player.CotDRequest.Date != DateTime.Now.Date)
+                {
+                    player.CotDRequest = DateTime.Now;
+                    Program.AzureStorage.UploadTableData(player, PlayerDataTable);
+                    DisplayCardOfTheDay(null);
+                }
+                return "";
+            }
+            else if (cardName.Equals("score", StringComparison.CurrentCultureIgnoreCase))
             {
                 List<Player> players = new List<Player>();
-                Program.AzureStorage.Populate<Player>(out players, CotDScoreTableName, Program.Messenger.Room);
+                Program.AzureStorage.Populate<Player>(out players, PlayerDataTable, Program.Messenger.Room);
 
                 string ret = "Current Player Scores are:<br><table>";
 
-                foreach(var player in players)
+                // Decay by 1 Each Month.
+                System.Globalization.CultureInfo myCI = new System.Globalization.CultureInfo("en-GB", false);
+
+                System.Globalization.CultureInfo myCIclone = (System.Globalization.CultureInfo)myCI.Clone();
+                myCIclone.NumberFormat.NumberDecimalDigits = 2;
+                
+                int i = 0;
+                foreach (var player in players.OrderByDescending(p => p.RankScore))
                 {
-                    ret += "<tr><td>" + player.RowKey + "</td><td></td><td>" + player.CotDScore.ToString() + "</td></tr>";
+                    Player output = EvaluateRank(player);
+
+                    ++i;
+                    ret += "<tr><td>" + i.ToString() + ".) </td><td>" + output.RowKey + "</td><td></td><td>" + output.CotDScore.ToString() + "</td><td>    (" + output.RankScore.ToString("N2") + ")</td></tr>";
                 }
-
                 ret += "</table>";
-
                 return ret;
             }
 
@@ -639,7 +662,7 @@ namespace HipchatMTGBot
             {
                 string query = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Program.Messenger.Room);
                 query = TableQuery.CombineFilters(query, TableOperators.And, TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, requestingUser));
-                Player player = Program.AzureStorage.Populate<Player>(CotDScoreTableName, query);
+                Player player = Program.AzureStorage.Populate<Player>(PlayerDataTable, query);
 
                 if(player == null)
                 {
@@ -649,8 +672,12 @@ namespace HipchatMTGBot
                     player.CotDScore = 0;
                 }
 
-                player.CotDScore += 1;
-                Program.AzureStorage.UploadTableData(player, CotDScoreTableName);
+                Player output = EvaluateRank(player);
+                output.LastCorrectGuess = DateTime.Now;
+                output.CotDScore += 1;
+                output.RankScore += 1;
+                output.CotDRequest = DateTime.Now;
+                Program.AzureStorage.UploadTableData(output, PlayerDataTable);
                 
                 string query2 = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Program.Messenger.Room);
                 query2 = TableQuery.CombineFilters(query2, TableOperators.And, TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, CotD.card.name));
@@ -670,6 +697,28 @@ namespace HipchatMTGBot
             }
 
             return requestingUser + " " + cardName + " (Incorrect)";
+        }
+
+        private static Player EvaluateRank(Player player)
+        {
+            UpdatePlayerVersion(player);
+
+            TimeSpan offset = DateTime.Now - player.LastCorrectGuess;
+            player.RankScore = player.RankScore * Math.Pow(Math.E, offset.TotalMilliseconds * decayRateK);
+            Program.AzureStorage.UploadTableData(player, PlayerDataTable);
+
+            return player;
+        }
+
+        private static void UpdatePlayerVersion(Player player)
+        {
+            if (player.Version < 2)
+            {
+                player.Version = 2;
+                player.RankScore = player.CotDScore;
+                player.LastCorrectGuess = DateTime.Now;
+                player.CotDRequest = DateTime.Now;
+            }
         }
 
         private static string[] listChoices = { "printings", "colouridentity", "type", "types", "subtype", "subtypes" };
