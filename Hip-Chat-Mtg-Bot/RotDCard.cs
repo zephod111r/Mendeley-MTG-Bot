@@ -9,6 +9,7 @@ namespace HipchatMTGBot
 {
     class RotDCard : TableEntity
     {
+        public int Version { get; set; }
         public DateTime DateShown { get; set; }
     }
 }

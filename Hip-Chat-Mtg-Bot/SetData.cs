@@ -8,17 +8,16 @@ namespace HipchatMTGBot
 {
     class SetData
     {
-        public string name = null;
-        public string code = null;
-        public string gathererCode = null;
-        public string oldCode = null;
-        public string releaseDate = null;
-        public string border = null;
-        public string type = null;
-        public string block = null;
-        public bool onlineOnly = false;
-        public List<object> booster = null;
-
-        public List<Card> cards = null;
+        public string name { get; set; }
+        public string code { get; set; }
+        public string gathererCode { get; set; }
+        public string oldCode { get; set; }
+        public string releaseDate { get; set; }
+        public string border { get; set; }
+        public string type { get; set; }
+        public string block { get; set; }
+        public bool onlineOnly { get; set; }
+        public List<object> booster { get; set; }
+        public List<Card> cards { get; set; }
     }
 }

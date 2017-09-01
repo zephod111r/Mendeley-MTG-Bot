@@ -84,6 +84,8 @@ namespace HipchatMTGBot
 
         static Dictionary<string, SetData> cardJson = null;
 
+        public static List<SetData> SetData { private get; set; }
+
         private static CotD CotD
         {
             get; set;
@@ -258,7 +260,6 @@ namespace HipchatMTGBot
             updateRotDTimer = new Timer(DisplayRareOfTheDay, null, (int)timeDiff.TotalMilliseconds, System.Threading.Timeout.Infinite);
         }
         
-
         private static void DisplayCardOfTheDay(Object o)
         {
             try
@@ -368,7 +369,6 @@ namespace HipchatMTGBot
                 updateCotDTimer = new Timer(DisplayCardOfTheDay, null, (int)timeDiff.TotalMilliseconds, System.Threading.Timeout.Infinite);
             }
         }
-
 
         private static string GenerateCardData(string cardData, List<SetData> setDataToUse, bool showRulings=false)
         {
@@ -571,9 +571,6 @@ namespace HipchatMTGBot
             return items;
         }
 
-        public static List<SetData> SetData
-        { private get; set; }
-
         public static string setSetToUse(string setName, string requestingUser)
         {
             setName = setName.Replace("((", "");
@@ -614,7 +611,9 @@ namespace HipchatMTGBot
                 string query = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Program.Messenger.Room);
                 query = TableQuery.CombineFilters(query, TableOperators.And, TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, requestingUser));
                 Player player = Program.AzureStorage.Populate<Player>(PlayerDataTable, query);
-                if (player == null || player.CotDRequest.Date != DateTime.Now.Date)
+                if ((player == null || 
+                    player.CotDRequest.Date != DateTime.Now.Date) && 
+                    (DateTime.Now.Hour > 9 && DateTime.Now.Hour < 18 && DateTime.Now.DayOfWeek != DayOfWeek.Saturday && DateTime.Now.DayOfWeek != DayOfWeek.Sunday))
                 {
                     player.CotDRequest = DateTime.Now;
                     Program.AzureStorage.UploadTableData(player, PlayerDataTable);
@@ -719,6 +718,24 @@ namespace HipchatMTGBot
                 player.LastCorrectGuess = DateTime.Now;
                 player.CotDRequest = DateTime.Now;
             }
+            if (player.Version < 3)
+            {
+                player.Version = 3;
+                player.TotalScore = player.CotDScore;
+            }
+            if(player.Version < 4)
+            {
+                player.Version = 4;
+                player.TotalScore = 0;
+                player.CotDScore = 0;
+                player.LastCorrectGuess = DateTime.Now;
+                player.CotDRequest = DateTime.Now;
+            }
+            if(player.Version < 5)
+            {
+                player.Version = 5;
+                player.RankScore = 0;
+            }
         }
 
         private static string[] listChoices = { "printings", "colouridentity", "type", "types", "subtype", "subtypes" };
@@ -805,9 +822,28 @@ namespace HipchatMTGBot
                     }
 
                     string[] types = pair.Value.Split(',');
+                    
                     foreach (string type in types)
                     {
                         if (!card.colorIdentity.Contains(type, StringComparer.CurrentCultureIgnoreCase))
+                        {
+                            return false;
+                        }
+                    }
+
+                    string[] possibles = "w,r,g,b,u".Split(',');
+                    List<string> values = new List<string>();
+                    foreach (string type in possibles)
+                    {
+                        if(!types.Contains(type))
+                        {
+                            values.Add(type);
+                        }
+                    }
+
+                    foreach (string type in values)
+                    {
+                        if (card.colorIdentity.Contains(type, StringComparer.CurrentCultureIgnoreCase))
                         {
                             return false;
                         }

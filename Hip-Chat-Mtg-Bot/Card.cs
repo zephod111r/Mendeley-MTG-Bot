@@ -8,32 +8,40 @@ namespace HipchatMTGBot
 {
     class Ruling
     {
-        public string date = null;
-        public string text = null;
+        public string date { get; set; }
+        public string text { get; set; }
+    }
+
+    class Legality
+    {
+        public string format { get; set; }
+        public string legality { get; set; }
     }
 
     class Card
     {
-        public string name = null;
-        public string manaCost = null;
-        public float cmc = 0.0f;
-        public List<string> colors = null;
-        public string type = null;
-        public List<string> subtypes = null;
-        public List<string> types = null;
-        public string rarity = null;
-        public string text = null;
-        public string flavor = null;
-        public string artist = null;
-        public string number = null;
-        public string power = null;
-        public string toughness = null;
-        public int multiverseid = 0;
-        public string imageName = null;
-        public List<Ruling> rulings = null;
-        public string layout = null;
-        public List<string> printings = null;
-        public List<string> colorIdentity = null;
+        public string name { get; set; }
+        public string manaCost { get; set; }
+        public float cmc { get; set; }
+        public List<string> colors { get; set; }
+        public string type { get; set; }
+        public List<string> subtypes { get; set; }
+        public List<string> types { get; set; }
+        public string rarity { get; set; }
+        public string text { get; set; }
+        public string flavor { get; set; }
+        public string artist { get; set; }
+        public string number { get; set; }
+        public string power { get; set; }
+        public string toughness { get; set; }
+        public int multiverseid { get; set; }
+        public string imageName { get; set; }
+        public List<Ruling> rulings { get; set; }
+        public string layout { get; set; }
+        public List<string> printings { get; set; }
+        public List<string> colorIdentity { get; set; }
+        public List<Legality> legalities { get; set; }
+        public string mciNumber { get; set; }
     }
 
     class CardResult : IComparable

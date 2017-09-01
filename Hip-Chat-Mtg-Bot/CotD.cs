@@ -8,8 +8,9 @@ namespace HipchatMTGBot
 {
     class CotD
     {
-        public SetData set;
-        public Card card;
-        public string display;
+        public int Version { get; set; }
+        public SetData set { get; set; }
+        public Card card { get; set; }
+        public string display { get; set; }
     }
 }
