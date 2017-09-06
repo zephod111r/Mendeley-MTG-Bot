@@ -117,6 +117,7 @@ namespace HipchatMTGBot
         {
             try
             {
+                Program.Slack.SendMessage(message);
                 m_Client.SendNotification(Room, message, colour);
             }
             catch (Exception err)

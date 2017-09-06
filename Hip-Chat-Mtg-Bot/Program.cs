@@ -35,6 +35,12 @@ namespace HipchatMTGBot
             private set;
         }
 
+        static public SlackMessenger Slack
+        {
+            get;
+            private set;
+        }
+
         static public Azure AzureStorage
         {
             get;
@@ -51,6 +57,7 @@ namespace HipchatMTGBot
         {
             AzureStorage = new Azure();
             Messenger = new HipchatMessenger();
+            Slack = new SlackMessenger();
             ParseArguments(args);
             CardManager = new MagicTheGathering();
             Vote.Init();
@@ -144,6 +151,10 @@ namespace HipchatMTGBot
         {
             foreach (string change in updates)
             {
+                if (change == "weburl")
+                {
+                    Slack.WebUrl = arguments["weburl"];
+                }
                 if (change == "room")
                 {
                     Messenger.Room = arguments["room"];
