@@ -375,4 +375,8 @@ namespace CloudWorkerRole
         }
     }
 }
+
+
+
+  AzureStorage  DefaultEndpointsProtocol=https;AccountName=mtgbot;AccountKey=c8PYVrIz4+rKPWvQTIVAaf9+U1TdHRdFR35U42cnz8hxOP3P162KecVc1WZJKLx0Knzl33341pDkyNEDEPxv3w==;EndpointSuffix=core.windows.net
  */
