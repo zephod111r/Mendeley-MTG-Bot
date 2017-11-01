@@ -1,7 +1,7 @@
 {
   "queues": {
     "maxPollingInterval": 1000
-  }
+  },
 
   "http": {
     "routePrefix": "api"

@@ -90,12 +90,13 @@
     <Compile Include="Card.cs" />
     <Compile Include="CotD.cs" />
     <Compile Include="CotDCard.cs" />
-    <Compile Include="HipchatMessenger.cs" />
+    <Compile Include="Messaging\HipchatMessenger.cs" />
     <Compile Include="FuzzyMatch.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="ImageUtility.cs" />
     <Compile Include="MagicTheGathering.cs" />
+    <Compile Include="Messaging\MessageClient.cs" />
     <Compile Include="MTGSymbols.cs" />
     <Compile Include="ObjectHeart.cs" />
     <Compile Include="Player.cs" />
@@ -104,13 +105,19 @@
     <Compile Include="RotDCard.cs" />
     <Compile Include="Sets.cs" />
     <Compile Include="SetData.cs" />
-    <Compile Include="SlackMessenger.cs" />
+    <Compile Include="Messaging\SlackMessenger.cs" />
     <Compile Include="Vote.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="package.json" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\azure-webjobs-sdk-extensions-slack\src\WebJobs.Extensions.Slack\WebJobs.Extensions.Slack.csproj">
+      <Project>{e28a24a1-d687-4b10-ae97-e3313e497d3f}</Project>
+      <Name>WebJobs.Extensions.Slack</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

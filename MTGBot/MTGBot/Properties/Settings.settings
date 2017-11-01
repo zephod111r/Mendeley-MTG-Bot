@@ -1,0 +1,95 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="MTGBot.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="Capabilities" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">{
+    "capabilities": {
+        "hipchatApiConsumer": {
+            "fromName": "Sample Add-on",
+            "scopes": [
+                "send_notification"
+            ]
+        },
+        "installable": {
+            "allowGlobal": true,
+            "allowRoom": true,
+            "callbackUrl": "${host}/installed",
+            "uninstalledUrl": "${host}/uninstalled"
+        },
+        "webhook": [
+            {
+                "url": "${host}/echo",
+                "event": "room_message",
+                "pattern": ".*",
+                "name": "Echo",
+				"authentication": "jwt"
+            }
+        ],
+        "configurable": {
+            "url": "${host}/configure"
+        },
+		"glance": [ 
+			{
+				"icon": {
+					"url": "${host}/resources/img/icon.png",
+					"url@2x": "${host}/resources/img/icon.png"
+				},
+				"key": "sample-glance",
+				"name": {
+					"value": "Sample Glance"
+				},
+				"queryUrl": "${host}/glance-data",
+				"target": "sample-sidebar"
+			}
+		],
+		"webPanel" : [
+			{
+				"icon": {
+					"url": "${host}/resources/img/icon.png",
+					"url@2x": "${host}/resources/img/icon.png"
+				},
+				"key": "sample-sidebar",
+				"name": {
+					"value": "Sample sidebar"
+				},
+				"url": "${host}/sidebar",
+				"location": "hipchat.sidebar.right"
+			}
+		],
+		"dialog": [
+			{
+  		  		"title": { 
+					"value": "My Dialog"
+				},
+				"key": "sample-dialog",
+				"options": {},
+				"url": "${host}/dialog"
+			}
+		],
+		"action": [
+			{
+				"key": "sample-message-action",
+				"name": {
+					"value": "Sample action"
+				},
+				"target": "sample-sidebar",
+				"location": "hipchat.message.action"
+			}
+		]
+    },
+    "description": "Sample HipChat Addon",
+    "key": "sample-hipchat-addon",
+    "links": {
+        "homepage": "${host}",
+        "self": "${host}/capabilities.json"
+    },
+    "name": "Sample Addon",
+    "vendor": {
+        "name": "Atlassian",
+        "url": "https://www.atlassian.com/"
+    }
+}</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

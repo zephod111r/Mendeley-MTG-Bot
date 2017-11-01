@@ -29,7 +29,7 @@ namespace HipchatMTGBot
             set;
         }
 
-        static public HipchatMessenger Messenger
+        static public MessageClient Messenger
         {
             get;
             private set;
@@ -56,12 +56,12 @@ namespace HipchatMTGBot
         static void Main(string[] args)
         {
             AzureStorage = new Azure();
-            Messenger = new HipchatMessenger();
-            Slack = new SlackMessenger();
+            Messenger =  // new HipchatMessenger();
+                            new SlackMessenger();
             ParseArguments(args);
             CardManager = new MagicTheGathering();
             Vote.Init();
-            Messenger.SetTopic("Type '/Help' to obtain MTG Bot instructions");
+            Messenger.Topic = "Type '/Help' to obtain MTG Bot instructions";
             Messenger.Handle(regexPatternUser, getUserProfile);
             Messenger.Handle(regexPatternHelp, getHelp);
             Console.ReadLine();
@@ -76,7 +76,7 @@ namespace HipchatMTGBot
         {
             Dictionary<string, string> helpItems = new Dictionary<string, string>();
 
-            HipchatMessenger.GetHelp(ref helpItems);
+            Messenger.GetHelp(ref helpItems);
             MagicTheGathering.GetHelp(ref helpItems);
             Vote.GetHelp(ref helpItems);
 
@@ -153,15 +153,24 @@ namespace HipchatMTGBot
             {
                 if (change == "weburl")
                 {
-                    Slack.WebUrl = arguments["weburl"];
+                    if (Messenger.GetType() == typeof(SlackMessenger))
+                    {
+                        ((SlackMessenger)Messenger).WebUrl = arguments["weburl"];
+                    }
                 }
                 if (change == "room")
                 {
-                    Messenger.Room = arguments["room"];
+                    if (Messenger.GetType() == typeof(HipchatMessenger))
+                    {
+                        ((HipchatMessenger)Messenger).Room = arguments["room"];
+                    }
                 }
                 else if (change == "apikey")
                 {
-                    Messenger.ApiKey = arguments["apikey"];
+                    if (Messenger.GetType() == typeof(HipchatMessenger))
+                    {
+                        ((HipchatMessenger)Messenger).ApiKey = arguments["apikey"];
+                    }
                 }
                 else if(change == "azurekey")
                 {

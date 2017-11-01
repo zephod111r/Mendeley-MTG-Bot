@@ -60,7 +60,7 @@ namespace HipchatMTGBot
             }
             timer = new Timer(ReportAnswersAndDelete, this, duration * 1000, Timeout.Infinite);
             
-            Program.Messenger.SendMessage(announce, HipchatApiV2.Enums.RoomColors.Green);
+            Program.Messenger.SendMessage(announce, MessageClient.MessageColour.Green);
         }
 
         public void Answer(string user, string answer)

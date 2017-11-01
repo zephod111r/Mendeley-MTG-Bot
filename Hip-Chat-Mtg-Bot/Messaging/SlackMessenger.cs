@@ -4,11 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Slack.Webhooks;
-
+using Microsoft.Azure.WebJobs;
 
 namespace HipchatMTGBot
 {
-    class SlackMessenger
+    class SlackMessenger : MessageClient
     {
         SlackClient SlackClient { get; set; }
 
@@ -17,9 +17,11 @@ namespace HipchatMTGBot
 
         }
 
+        public override string Topic { get; set; }
+
         public string WebUrl { set { SlackClient = new SlackClient(value); } } 
 
-        public void SendMessage(string message)
+        public override void SendMessage(string message, MessageColour colour)
         {
             SlackMessage slackMessage = new SlackMessage();
             slackMessage.Parse = ParseMode.Full;

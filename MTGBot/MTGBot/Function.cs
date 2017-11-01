@@ -1,4 +1,5 @@
-using System.Linq;
+using System;
+using System.Configuration;
 using System.Net;
 using System.Net.Http;
 using Microsoft.Azure.WebJobs;
@@ -12,32 +13,41 @@ using Newtonsoft.Json;
 using Microsoft.WindowsAzure;
 using Microsoft.WindowsAzure.Storage;
 
-//using System.IdentityModel.Tokens.Jwt;
-//@""
+using System.IdentityModel.Tokens.Jwt;
+using System.Collections.Generic;
+
 namespace MTGBot
 {
-    public static class Function
+    internal class Utilities
     {
-        [FunctionName("Function")]
-        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.User, "get", Route = "card/{name}")]HttpRequestMessage req, string name, TraceWriter log)
+        static public readonly string capabilityString = ConfigurationManager.AppSettings["Capabilities"];
+        static public Dictionary<string, Installation> installationStore = new Dictionary<string, Installation>();
+        static public Dictionary<string, AccessToken> accessTokenStore = new Dictionary<string, AccessToken>();
+        static public readonly WebClient webClient = new WebClient();
+        static public readonly Azure azure = new Azure();
+    }
+
+    public static class Echo
+    {
+
+        [FunctionName("Echo")]
+        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "echo")]HttpRequestMessage req, TraceWriter log)
         {
             log.Info("C# HTTP trigger function processed a request.");
 
             // Fetching the name from the path parameter in the request URL
-            return req.CreateResponse(HttpStatusCode.OK, "Hello " + name);
+            return req.CreateResponse(HttpStatusCode.OK);
         }
     }
 
     public static class Descriptor
     {
         [FunctionName("Descriptor")]
-        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.User, "get", Route = "install/descriptor")]HttpRequestMessage req, TraceWriter log)
+        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "descriptor")]HttpRequestMessage req, TraceWriter log)
         {
             log.Info("C# HTTP trigger function processed a request.");
-
-            string capabilityString = 
-
-            capabilityString = capabilityString.Replace("${host}", req.Url.Scheme.ToString() + "://" + req.Url.Authority);
+            
+            string capabilityString = Utilities.capabilityString.Replace("${host}", req.RequestUri.Scheme.ToString() + "://" + req.RequestUri.Authority);
 
             CapabilityDescriptor desc = JsonConvert.DeserializeObject<CapabilityDescriptor>(capabilityString);
 
@@ -50,6 +60,39 @@ namespace MTGBot
 
             // Fetching the name from the path parameter in the request URL
             return req.CreateResponse(HttpStatusCode.OK, sb.ToString(), "application/json");
+        }
+    }
+
+
+    public static class Install
+    {
+        [FunctionName("Install")]
+        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "install")]HttpRequestMessage req, TraceWriter log)
+        {
+            log.Info("C# HTTP trigger function processed a request.");
+
+            if (req.Content == null)
+            {
+                throw new System.MissingMemberException("Invalid Post request!");
+            }
+
+            string body = await req.Content.ReadAsStringAsync();
+
+            Installation installation = JsonConvert.DeserializeObject<Installation>(body);
+            string oauth = installation.oauthId;
+            Utilities.installationStore[oauth] = installation;
+            JwtSecurityToken token = new JwtSecurityToken(oauth);
+
+            string capabilitiesUrl = installation.capabilitiesUrl;
+            string value = await Utilities.webClient.DownloadStringTaskAsync(capabilitiesUrl);
+
+            dynamic capabilities = JsonConvert.DeserializeObject(value);
+
+            installation.tokenUrl = capabilities.capabilities.oauth2Provider.tokenUrl;
+            installation.apiUrl = capabilities.capabilities.hipchatApiProvider.url;
+
+            // Fetching the name from the path parameter in the request URL
+            return req.CreateResponse(HttpStatusCode.OK);
         }
     }
 }

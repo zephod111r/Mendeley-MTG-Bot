@@ -224,7 +224,7 @@ namespace HipchatMTGBot
                     List<SetData> sets = new List<SetData>();
                     sets.Add(set);
                     var cardData = "MTG Bot - Card of the day<br/>" + GenerateCardData(todisplay.name, sets);
-                    Program.Messenger.SendMessage(cardData, RoomColors.Yellow);
+                    Program.Messenger.SendMessage(cardData, MessageClient.MessageColour.Yellow);
                     cardOfTheDayFound = true;
                 }
             }
@@ -267,7 +267,7 @@ namespace HipchatMTGBot
                 if (CotD != null)
                 {
                     string message = "CotD: No one guessed correctly!<br>It was:<br>" + displayCard(cardJson.Values.Where(p => p.cards.Contains(CotD.card)).First(), CotD.card, 311, 223);
-                    Program.Messenger.SendMessage(message, RoomColors.Yellow);
+                    Program.Messenger.SendMessage(message, MessageClient.MessageColour.Yellow);
                 }
             }
             catch (Exception)
@@ -329,7 +329,7 @@ namespace HipchatMTGBot
 
                         codUsedCards.Add(todisplay.name.ToUpper());
 
-                        Program.Messenger.SendMessage(CotD.display, RoomColors.Green);
+                        Program.Messenger.SendMessage(CotD.display, MessageClient.MessageColour.Green);
                     }
                 }
             }
