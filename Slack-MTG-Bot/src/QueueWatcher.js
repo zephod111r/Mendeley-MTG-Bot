@@ -1,5 +1,9 @@
 const azure = require('azure');
+const storage = require('azure-storage');
 const QueueService = azure.createQueueService();
+const QueueMessageEncoder = new storage.QueueMessageEncoder.TextBase64QueueMessageEncoder();
+
+QueueService.messageEncoder = QueueMessageEncoder;
 
 class QueueWatcher {
     constructor(robot, queue, size, timeout) {

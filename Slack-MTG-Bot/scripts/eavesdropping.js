@@ -13,8 +13,6 @@ module.exports = robot => {
         const message = event.message.text;
         const from = event.message.user;
 
-        const payload = new Buffer(JSON.stringify({ from, message }), 'utf8');
-
-        QueueService.createMessage('inbound', payload.toString('base64'), () => {});
+        QueueService.createMessage('inbound', JSON.stringify({ from, message }), () => {});
     });
 };
