@@ -1,24 +1,61 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Net;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
-using HipchatApiV2;
-using HipchatApiV2.Requests;
-using HipchatApiV2.Responses;
-using HipchatApiV2.Enums;
-using Newtonsoft.Json;
-using System.Web;
+using Microsoft.Azure.WebJobs;
+using System.Text.RegularExpressions;
+using System.Configuration;
 
 namespace HipchatMTGBot
 {
+
+    // To learn more about Microsoft Azure WebJobs SDK, please see https://go.microsoft.com/fwlink/?LinkID=320976
     class Program
     {
+        static public string GetConnectionStringFromEnvironment(string settingName)
+        {
+
+            string settingValue = Environment.GetEnvironmentVariable(variable: settingName);
+
+            if (settingValue == null)
+            {
+                settingValue = ConfigurationManager.ConnectionStrings[settingName].ConnectionString;
+            }
+
+            return settingValue;
+        }
+
+        // Please set the following connection strings in app.config for this WebJob to run:
+        // AzureWebJobsDashboard and AzureWebJobsStorage
+        static void Main()
+        {
+            Console.WriteLine("Starting Application");
+            AzureStorage = new Azure();
+
+            AzureStorage.StorageKey = GetConnectionStringFromEnvironment("AzureWebJobsStorage");
+            Messenger = new QueueMessenger();
+            //ParseArguments(args);
+            CardManager = new MagicTheGathering();
+            Vote.Init();
+            Messenger.Topic = "Type '/Help' to obtain MTG Bot instructions";
+            Messenger.Handle(regexPatternUser, getUserProfile);
+            Messenger.Handle(regexPatternHelp, getHelp);
+
+            var config = new JobHostConfiguration();
+
+            if (config.IsDevelopment)
+            {
+                config.UseDevelopmentSettings();
+            }
+
+            var host = new JobHost(config);
+            // The following code ensures that the WebJob will be running continuously
+            host.RunAndBlock();
+            Console.WriteLine("Terminated Application");
+        }
+
+
         private static Dictionary<string, string> arguments = new Dictionary<string, string>();
         const string regexPatternUser = @"\[\[(.+)\]\]";
         const string regexPatternHelp = @"^\/(?:help|Help|HELP)$";
@@ -30,12 +67,6 @@ namespace HipchatMTGBot
         }
 
         static public MessageClient Messenger
-        {
-            get;
-            private set;
-        }
-
-        static public SlackMessenger Slack
         {
             get;
             private set;
@@ -53,19 +84,6 @@ namespace HipchatMTGBot
             private set;
         }
 
-        static void Main(string[] args)
-        {
-            AzureStorage = new Azure();
-            Messenger =   new HipchatMessenger();
-            ParseArguments(args);
-            CardManager = new MagicTheGathering();
-            Vote.Init();
-            Messenger.Topic = "Type '/Help' to obtain MTG Bot instructions";
-            Messenger.Handle(regexPatternUser, getUserProfile);
-            Messenger.Handle(regexPatternHelp, getHelp);
-            Console.ReadLine();
-        }
-
         private static string getHelp(Dictionary<string, string> options, string requestingUser)
         {
             return helpString();
@@ -74,7 +92,7 @@ namespace HipchatMTGBot
         public static string helpString()
         {
             Dictionary<string, string> helpItems = new Dictionary<string, string>();
-            
+
             MagicTheGathering.GetHelp(ref helpItems);
             Vote.GetHelp(ref helpItems);
 
@@ -95,8 +113,8 @@ namespace HipchatMTGBot
             userName = userName.Replace("]]", "");
             if (String.IsNullOrEmpty(userName))
                 return null;
-            
-            if(String.Compare(userName, "FCotD") == 0)
+
+            if (String.Compare(userName, "FCotD") == 0)
             {
                 return Messenger.GetUserPicture("@FindlayHannam");
             }
@@ -149,28 +167,7 @@ namespace HipchatMTGBot
         {
             foreach (string change in updates)
             {
-                if (change == "weburl")
-                {
-                    if (Messenger.GetType() == typeof(SlackMessenger))
-                    {
-                        ((SlackMessenger)Messenger).WebUrl = arguments["weburl"];
-                    }
-                }
-                if (change == "room")
-                {
-                    if (Messenger.GetType() == typeof(HipchatMessenger))
-                    {
-                        ((HipchatMessenger)Messenger).Room = arguments["room"];
-                    }
-                }
-                else if (change == "apikey")
-                {
-                    if (Messenger.GetType() == typeof(HipchatMessenger))
-                    {
-                        ((HipchatMessenger)Messenger).ApiKey = arguments["apikey"];
-                    }
-                }
-                else if(change == "azurekey")
+                if (change == "azurekey")
                 {
                     AzureStorage.StorageKey = arguments["azurekey"];
                 }
