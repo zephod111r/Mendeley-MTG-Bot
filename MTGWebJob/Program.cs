@@ -31,11 +31,14 @@ namespace HipchatMTGBot
         static void Main()
         {
             Console.WriteLine("Starting Application");
-            AzureStorage = new Azure();
 
+            AzureStorage = new Azure();
             AzureStorage.StorageKey = GetConnectionStringFromEnvironment("AzureWebJobsStorage");
-            Messenger = new QueueMessenger();
-            //ParseArguments(args);
+
+            Messenger = new HipchatMessenger();
+            Messenger.Room =  GetConnectionStringFromEnvironment("Room");
+            ((HipchatMessenger)Messenger).ApiKey = GetConnectionStringFromEnvironment("ApiKey");
+            
             CardManager = new MagicTheGathering();
             Vote.Init();
             Messenger.Topic = "Type '/Help' to obtain MTG Bot instructions";

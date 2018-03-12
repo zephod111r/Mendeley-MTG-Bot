@@ -123,29 +123,17 @@ namespace HipchatMTGBot
             //Get new json data on init (so I can just restart bot when new set comes out)
             using (WebClient WebClient = new WebClient())
             {
-                if (File.Exists("AllSets-x.json"))
+                Stream data = WebClient.OpenRead("http://mtgjson.com/json/AllSets-x.json.zip");
+                using (ZipArchive archive = new ZipArchive(data))
                 {
-                    if (File.GetCreationTime("AllSets-x.json") < DateTime.Now.AddDays(-1.0))
+                    foreach (ZipArchiveEntry entry in archive.Entries)
                     {
-                        File.Delete("AllSets-x.json");
-                        WebClient.DownloadFile("http://mtgjson.com/json/AllSets-x.json.zip", "AllSets.json.zip");
-                        using (ZipArchive archive = ZipFile.OpenRead("AllSets.json.zip"))
+                        Stream entryStream = entry.Open();
+                        using (var r = new StreamReader(entryStream))
                         {
-                            foreach (ZipArchiveEntry entry in archive.Entries)
-                            {
-                                entry.ExtractToFile(Path.Combine("", entry.FullName));
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    WebClient.DownloadFile("http://mtgjson.com/json/AllSets-x.json.zip", "AllSets.json.zip");
-                    using (ZipArchive archive = ZipFile.OpenRead("AllSets.json.zip"))
-                    {
-                        foreach (ZipArchiveEntry entry in archive.Entries)
-                        {
-                            entry.ExtractToFile(Path.Combine("", entry.FullName));
+                            string json = r.ReadToEnd();
+                            Dictionary<string, SetData> cards = JsonConvert.DeserializeObject<Dictionary<string, SetData>>(json);
+                            cardJson = cards;
                         }
                     }
                 }
@@ -615,6 +603,15 @@ namespace HipchatMTGBot
                     player.CotDRequest.Date != DateTime.Now.Date) && 
                     (DateTime.Now.Hour > 9 && DateTime.Now.Hour < 18 && DateTime.Now.DayOfWeek != DayOfWeek.Saturday && DateTime.Now.DayOfWeek != DayOfWeek.Sunday))
                 {
+                    if(player == null)
+                    {
+                        player = new Player();
+                        player.PartitionKey = Program.Messenger.Room;
+                        player.RowKey = requestingUser;
+                        player.Version = 0;
+                        UpdatePlayerVersion(player);
+                    }
+
                     player.CotDRequest = DateTime.Now;
                     Program.AzureStorage.UploadTableData(player, PlayerDataTable);
                     DisplayCardOfTheDay(null);
@@ -668,7 +665,9 @@ namespace HipchatMTGBot
                     player = new Player();
                     player.PartitionKey = Program.Messenger.Room;
                     player.RowKey = requestingUser;
+                    player.Version = 0;
                     player.CotDScore = 0;
+                    UpdatePlayerVersion(player);
                 }
 
                 Player output = EvaluateRank(player);
@@ -740,6 +739,20 @@ namespace HipchatMTGBot
             {
                 player.Version = 6;
                 player.TotalScore += player.CotDScore;
+                player.RankScore = 0;
+                player.CotDScore = 0;
+            }
+            if (player.Version < 7)
+            {
+                player.Version = 7;
+                player.TotalScore += player.CotDScore;
+                player.RankScore = 0;
+                player.CotDScore = 0;
+            }
+            if (player.Version < 8)
+            {
+                player.Version = 8;
+                player.TotalScore = 0;
                 player.RankScore = 0;
                 player.CotDScore = 0;
             }

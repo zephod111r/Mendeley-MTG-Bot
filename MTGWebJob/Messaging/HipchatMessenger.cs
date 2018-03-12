@@ -9,7 +9,7 @@ using HipchatApiV2.Enums;
 
 namespace HipchatMTGBot
 {
-    class HipchatMessenger : MessageClient
+    class HipchatMessenger : QueueMessenger
     {
         #region Properties
         private HipchatClient m_Client
@@ -128,6 +128,8 @@ namespace HipchatMTGBot
             {
                 Console.Out.WriteLineAsync(err.Message);
             }
+
+            base.SendMessage(message, colour);
         }
 
         /// <summary>

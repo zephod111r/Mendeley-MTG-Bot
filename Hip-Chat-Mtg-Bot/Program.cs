@@ -57,7 +57,12 @@ namespace HipchatMTGBot
         {
             AzureStorage = new Azure();
             Messenger =   new HipchatMessenger();
-            ParseArguments(args);
+
+            if (args.Count<string>() != 0)
+            {
+                ParseArguments(args);
+            }
+
             CardManager = new MagicTheGathering();
             Vote.Init();
             Messenger.Topic = "Type '/Help' to obtain MTG Bot instructions";

@@ -743,6 +743,13 @@ namespace HipchatMTGBot
                 player.RankScore = 0;
                 player.CotDScore = 0;
             }
+            if (player.Version < 7)
+            {
+                player.Version = 7;
+                player.TotalScore += player.CotDScore;
+                player.RankScore = 0;
+                player.CotDScore = 0;
+            }
         }
 
         private static string[] listChoices = { "printings", "colouridentity", "type", "types", "subtype", "subtypes" };
