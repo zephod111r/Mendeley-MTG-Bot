@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <ApplicationIcon />
+    <OutputType>Library</OutputType>
+    <StartupObject />
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Hipchat-CS" Version="0.0.52" />
+    <PackageReference Include="HtmlRenderer.Core" Version="1.5.0.6" />
+    <PackageReference Include="HtmlRenderer.WinForms" Version="1.5.0.6" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.4" />
+    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.5" />
+    <PackageReference Include="Microsoft.Azure.KeyVault.Core" Version="2.0.4" />
+    <PackageReference Include="Microsoft.Azure.Storage.Blob" Version="9.0.0-preview" />
+    <PackageReference Include="Microsoft.Azure.Storage.Queue" Version="9.0.0-preview" />
+    <PackageReference Include="Microsoft.Web.WebJobs.Publish" Version="1.1.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="ServiceStack.Text" Version="5.0.2" />
+    <PackageReference Include="Slack.Webhooks" Version="0.1.8" />
+    <PackageReference Include="System.Spatial" Version="5.8.3" />
+    <PackageReference Include="WindowsAzure.Storage" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="FuzzyMatch.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+
+</Project>

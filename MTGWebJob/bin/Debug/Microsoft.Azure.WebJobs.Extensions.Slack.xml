@@ -1,0 +1,151 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Azure.WebJobs.Extensions.Slack</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Azure.WebJobs.SlackConfiguration">
+            <summary>
+            Defines the configuration options for the Slack binding.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.SlackConfiguration.WebHookUrl">
+            <summary>
+            Gets or sets a global default Slack WebHookURL. If not explicitly set, the value will be defaulted
+            to the value specified via the 'AzureWebJobsSlackWebHookKeyName' app setting or the
+            'AzureWebJobsSlackWebHookKeyName' environment variable.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.SlackConfiguration.Username">
+            <summary>
+            Gets or sets the default "from: username" that will be used for messages.
+            This value can be overridden by job functions.
+            </summary>
+            <remarks>
+            This is a useful setting if you're planning on having lots of WebJobs posting
+            to the same WebHook, and want to differeniate them with separate usernames.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.SlackConfiguration.IconEmoji">
+            <summary>
+            Gets or sets the default "Icon Emoji" that will be used for messages.
+            This value can be overridden by job functions.
+            </summary>
+            <remarks>
+            This is a useful setting if you're planning on having lots of WebJobs posting
+            to the same WebHook, and want to differeniate them with separate Icons.
+            
+            The format for emoji is a keyword surrounded by ":". It supports custom emojis.
+            </remarks>
+            <example>
+            Example Icon Emoji for heart: ":heart:"
+            </example>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.SlackConfiguration.Channel">
+            <summary>
+            Gets or sets the default "to: channel" that will be used for messages.
+            This value can be overridden by job functions.
+            </summary>
+            <remarks>
+            To send to a specific channel, use the "#channel" pattern.
+            
+            To send to a specific user, use the "@username" pattern.
+            
+            This is a useful setting if you're reusing the same WebHook as another integration, but
+            want to use a separate channel. It is also helpful for testing purposes.
+            </remarks>
+            <example>
+            Example for sending to a specific channel, bot-channel: "#bot-channel"
+            Example for sending to a specific user: "@username"
+            </example>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.SlackConfiguration.IsMarkdown">
+            <summary>
+            Gets or sets the default on whether Markdown be used for formatting messages.
+            This value can be overridden by job functions.
+            </summary>
+            <remarks>
+            This is a useful setting if you're planning on having lots of WebJobs posting
+            to the same WebHook, and want to differeniate them with separate usernames.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.SlackConfiguration.#ctor(System.String)">
+            <summary>
+            Constructs a new instance.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.SlackJobHostConfigurationExtensions">
+            <summary>
+            Extension methods for Slack integration
+            </summary>
+        </member>
+        <member name="M:Microsoft.Azure.WebJobs.SlackJobHostConfigurationExtensions.UseSlack(Microsoft.Azure.WebJobs.JobHostConfiguration,Microsoft.Azure.WebJobs.SlackConfiguration)">
+            <summary>
+            Enables use of the Slack extensions
+            </summary>
+            <param name="config">The <see cref="T:Microsoft.Azure.WebJobs.JobHostConfiguration"/> to configure.</param>
+            <param name="slackConfig">The <see cref="T:Microsoft.Azure.WebJobs.SlackConfiguration"/> to use.</param>
+        </member>
+        <member name="T:Microsoft.Azure.WebJobs.SlackAttribute">
+            <summary>
+            Attribute used to binds a parameter to a SendGridMessage that will automatically be
+            sent when the function completes.
+            </summary>
+            <remarks>
+            The method parameter can be of type <see cref="T:Slack.Webhooks.SlackMessage"/> or a reference
+            to one ('ref' parameter). When using a reference parameter, you can indicate that the message
+            should not be sent by setting it to <see langword="null"/> before your job function returns.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.SlackAttribute.WebHookUrl">
+            <summary>
+            Sets the WebHookUrl for the current outgoing Slack message
+            </summary>
+            <remarks>
+            You can use parameters ("{fromTriggerProperty}") or a name resolver ("%fromINameResolver%")
+            to format your setting's string.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.SlackAttribute.Text">
+            <summary>
+            Sets the Text for the current outgoing Slack message
+            </summary>
+            <remarks>
+            You can use parameters ("{fromTriggerProperty}") or a name resolver ("%fromINameResolver%")
+            to format your setting's string.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.SlackAttribute.Username">
+            <summary>
+            Sets the username for the outgoing request.
+            </summary>
+            <remarks>
+            You can use parameters ("{fromTriggerProperty}") or a name resolver ("%fromINameResolver%")
+            to format your setting's string.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.SlackAttribute.IconEmoji">
+            <summary>
+            Controls the icon emoji displayed for the message. Use ":{emoji_name}:" in your string.
+            </summary>
+            <remarks>
+            You can use parameters ("{fromTriggerProperty}") or a name resolver ("%fromINameResolver%")
+            to format your setting's string.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.SlackAttribute.Channel">
+            <summary>
+            Controls the channel the message is sent to. Use "#{name}" to send to a channel, and "@{name}" to send to a specific user."
+            </summary>
+            <remarks>
+            You can use parameters ("{fromTriggerProperty}") or a name resolver ("%fromINameResolver%")
+            to format your setting's string.
+            </remarks>
+        </member>
+        <member name="P:Microsoft.Azure.WebJobs.SlackAttribute.IsMarkdown">
+            <summary>
+            Tells Slack whether to process this message as Markdown or not
+            </summary>
+        </member>
+    </members>
+</doc>
