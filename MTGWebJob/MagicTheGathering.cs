@@ -766,7 +766,11 @@ namespace HipchatMTGBot
         {
             foreach(KeyValuePair<string, string> pair in search)
             {
-                if (pair.Key == "name")
+                if(pair.Key == "maxresults")
+                {
+                    continue;
+                }
+                else if (pair.Key == "name")
                 {
                     if(card.name == null || !card.name.ToLower().Contains(pair.Value))
                     {
@@ -785,6 +789,20 @@ namespace HipchatMTGBot
                     float cmc = -1.0f;
                     float.TryParse(pair.Value, out cmc);
                     if (cmc != card.cmc)
+                    {
+                        return false;
+                    }
+                }
+                else if (pair.Key == "power")
+                {
+                    if (card.power == null || !card.power.ToLower().Equals(pair.Value))
+                    {
+                        return false;
+                    }
+                }
+                else if (pair.Key == "toughness")
+                {
+                    if (card.toughness == null || !card.toughness.ToLower().Equals(pair.Value))
                     {
                         return false;
                     }
@@ -907,6 +925,27 @@ namespace HipchatMTGBot
 
         private static string doSearch(Dictionary<string,string> search, string requestingUser)
         {
+            int maxResults = 9;
+            if(search.Keys.Contains("maxresults"))
+            {
+                int.TryParse(search["maxresults"], out maxResults);
+
+                if(maxResults < 9)
+                {
+                    maxResults = 9;
+                }
+
+                if(maxResults > 9 && maxResults % 3 != 0)
+                {
+                    maxResults -= (maxResults % 3);
+                }
+
+                if(maxResults > 66)
+                {
+                    maxResults = 66;
+                }
+            }
+
             Dictionary<Card, SetData> cardsFound = new Dictionary<Card, SetData>();
             foreach(SetData set in cardJson.Values)
             {
@@ -949,7 +988,7 @@ namespace HipchatMTGBot
                 ++count;
 
 
-                if(count >= 9)
+                if(count >= maxResults)
                 {
                     returnVal += "</tr>";
                     break;
