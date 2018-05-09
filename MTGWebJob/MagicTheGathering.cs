@@ -11,7 +11,7 @@ using HipchatApiV2.Enums;
 using Newtonsoft.Json;
 using System.Web;
 using Microsoft.WindowsAzure.Storage.Table;
-
+using System.Threading.Tasks;
 
 namespace HipchatMTGBot
 {
@@ -138,19 +138,16 @@ namespace HipchatMTGBot
                     }
                 }
             }
-
-            LoadData();
+            /*
+            Parallel.ForEach<SetData>(cardJson.Values, (set) => {
+                Parallel.ForEach<Card>(set.cards, (card) => {
+                    Console.Write("Processing: {0} {1}\n", set.name, card.name);
+                    ImageUtility.uploadCardImage(set, card);
+                    Console.Write("Completed: {0} {1}\n", set.name, card.name);
+                });
+            } );
+            */
             updateTimer = new Timer(UpdateAndLoadData, null, 24 * 60 * 60000, System.Threading.Timeout.Infinite);
-        }
-
-        private static void LoadData()
-        {
-            using (var r = new StreamReader("AllSets-x.json"))
-            {
-                string json = r.ReadToEnd();
-                Dictionary<string, SetData> cards = JsonConvert.DeserializeObject<Dictionary<string, SetData>>(json);
-                cardJson = cards;
-            }
         }
 
         private static string displayCard(SetData set, Card card, int height, int width)
@@ -206,7 +203,7 @@ namespace HipchatMTGBot
                     RotDCard card = new RotDCard();
                     card.PartitionKey = Program.Messenger.Room;
                     card.RowKey = todisplay.name;
-                    card.DateShown = DateTime.Now;
+                    card.DateShown = DateTime.Now.ToLocalTime();
                     Program.AzureStorage.UploadTableData(card, RotDTableName);
 
                     List<SetData> sets = new List<SetData>();
@@ -217,7 +214,7 @@ namespace HipchatMTGBot
                 }
             }
 
-            var targetTime = DateTime.Now;
+            var targetTime = DateTime.Now.ToLocalTime();
             if (targetTime.Hour >= 10 && targetTime.Hour < 15)
             {
                 targetTime = targetTime.AddHours(14 - targetTime.Hour);
@@ -244,7 +241,7 @@ namespace HipchatMTGBot
             targetTime = targetTime.AddSeconds(59 - targetTime.Second);
             targetTime = targetTime.AddMilliseconds(1000 - targetTime.Millisecond);
 
-            var timeDiff = targetTime - DateTime.Now;
+            var timeDiff = targetTime - DateTime.Now.ToLocalTime();
             updateRotDTimer = new Timer(DisplayRareOfTheDay, null, (int)timeDiff.TotalMilliseconds, System.Threading.Timeout.Infinite);
         }
         
@@ -304,9 +301,9 @@ namespace HipchatMTGBot
                         CotDCard card = new CotDCard();
                         card.PartitionKey = Program.Messenger.Room;
                         card.RowKey = todisplay.name;
-                        card.DateShown = DateTime.Now;
+                        card.DateShown = DateTime.Now.ToLocalTime();
                         card.GuessingPlayer = null;
-                        card.DateGuessed = DateTime.Now;
+                        card.DateGuessed = DateTime.Now.ToLocalTime();
                         Program.AzureStorage.UploadTableData(card, CotDTableName);
 
                         cardOfTheDayFound = true;
@@ -324,7 +321,7 @@ namespace HipchatMTGBot
             catch (Exception) { }
             finally
             {
-                var targetTime = DateTime.Now;
+                var targetTime = DateTime.Now.ToLocalTime();
                 if (targetTime.Hour >= 10 && targetTime.Hour < 15)
                 {
                     targetTime = targetTime.AddHours(14 - targetTime.Hour);
@@ -352,7 +349,7 @@ namespace HipchatMTGBot
                 targetTime = targetTime.AddSeconds(59 - targetTime.Second);
                 targetTime = targetTime.AddMilliseconds(1000 - targetTime.Millisecond);
 
-                var timeDiff = targetTime - DateTime.Now;
+                var timeDiff = targetTime - DateTime.Now.ToLocalTime();
 
                 updateCotDTimer = new Timer(DisplayCardOfTheDay, null, (int)timeDiff.TotalMilliseconds, System.Threading.Timeout.Infinite);
             }
@@ -600,8 +597,8 @@ namespace HipchatMTGBot
                 query = TableQuery.CombineFilters(query, TableOperators.And, TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, requestingUser));
                 Player player = Program.AzureStorage.Populate<Player>(PlayerDataTable, query);
                 if ((player == null || 
-                    player.CotDRequest.Date != DateTime.Now.Date) && 
-                    (DateTime.Now.Hour > 9 && DateTime.Now.Hour < 18 && DateTime.Now.DayOfWeek != DayOfWeek.Saturday && DateTime.Now.DayOfWeek != DayOfWeek.Sunday))
+                    player.CotDRequest.Date != DateTime.Now.ToLocalTime().Date) && 
+                    (DateTime.Now.ToLocalTime().Hour > 9 && DateTime.Now.ToLocalTime().Hour < 18 && DateTime.Now.ToLocalTime().DayOfWeek != DayOfWeek.Saturday && DateTime.Now.ToLocalTime().DayOfWeek != DayOfWeek.Sunday))
                 {
                     if(player == null)
                     {
@@ -612,7 +609,7 @@ namespace HipchatMTGBot
                         UpdatePlayerVersion(player);
                     }
 
-                    player.CotDRequest = DateTime.Now;
+                    player.CotDRequest = DateTime.Now.ToLocalTime();
                     Program.AzureStorage.UploadTableData(player, PlayerDataTable);
                     DisplayCardOfTheDay(null);
                 }
@@ -671,10 +668,10 @@ namespace HipchatMTGBot
                 }
 
                 Player output = EvaluateRank(player);
-                output.LastCorrectGuess = DateTime.Now;
+                output.LastCorrectGuess = DateTime.Now.ToLocalTime();
                 output.CotDScore += 1;
                 output.RankScore += 1;
-                output.CotDRequest = DateTime.Now;
+                output.CotDRequest = DateTime.Now.ToLocalTime();
                 Program.AzureStorage.UploadTableData(output, PlayerDataTable);
                 
                 string query2 = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Program.Messenger.Room);
@@ -683,7 +680,7 @@ namespace HipchatMTGBot
 
                 if (card != null)
                 {
-                    card.DateGuessed = DateTime.Now;
+                    card.DateGuessed = DateTime.Now.ToLocalTime();
                     card.GuessingPlayer = requestingUser;
                     Program.AzureStorage.UploadTableData(card, CotDTableName);
                 }
@@ -701,7 +698,7 @@ namespace HipchatMTGBot
         {
             UpdatePlayerVersion(player);
 
-            TimeSpan offset = DateTime.Now - player.LastCorrectGuess;
+            TimeSpan offset = DateTime.Now.ToLocalTime() - player.LastCorrectGuess;
             player.RankScore = player.RankScore * Math.Pow(Math.E, offset.TotalMilliseconds * decayRateK);
             Program.AzureStorage.UploadTableData(player, PlayerDataTable);
 
@@ -714,8 +711,8 @@ namespace HipchatMTGBot
             {
                 player.Version = 2;
                 player.RankScore = player.CotDScore;
-                player.LastCorrectGuess = DateTime.Now;
-                player.CotDRequest = DateTime.Now;
+                player.LastCorrectGuess = DateTime.Now.ToLocalTime();
+                player.CotDRequest = DateTime.Now.ToLocalTime();
             }
             if (player.Version < 3)
             {
@@ -727,8 +724,8 @@ namespace HipchatMTGBot
                 player.Version = 4;
                 player.TotalScore = 0;
                 player.CotDScore = 0;
-                player.LastCorrectGuess = DateTime.Now;
-                player.CotDRequest = DateTime.Now;
+                player.LastCorrectGuess = DateTime.Now.ToLocalTime();
+                player.CotDRequest = DateTime.Now.ToLocalTime();
             }
             if(player.Version < 5)
             {
