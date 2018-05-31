@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using static HipchatMTGBot.HipchatMessenger;
+using static MTGWebJob.HipchatMessenger;
 
-namespace HipchatMTGBot
+namespace MTGWebJob
 {
     class Vote
     {

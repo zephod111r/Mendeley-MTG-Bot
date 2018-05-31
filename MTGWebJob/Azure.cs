@@ -9,7 +9,7 @@ using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.Table;
 using Microsoft.WindowsAzure.Storage.Queue;
 
-namespace HipchatMTGBot
+namespace MTGWebJob
 {
     class Azure
     {

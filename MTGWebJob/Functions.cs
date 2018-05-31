@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Newtonsoft.Json;
 
-namespace HipchatMTGBot
+namespace MTGWebJob
 {
     public class Functions
     {

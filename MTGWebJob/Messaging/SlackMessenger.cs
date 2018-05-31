@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Slack.Webhooks;
 using Microsoft.Azure.WebJobs;
 
-namespace HipchatMTGBot
+namespace MTGWebJob
 {
     class SlackMessenger : MessageClient
     {

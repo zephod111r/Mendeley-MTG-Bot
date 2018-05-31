@@ -10,7 +10,7 @@ using System.Drawing;
 using TheArtOfDev.HtmlRenderer;
 using TheArtOfDev.HtmlRenderer.WinForms;
 
-namespace HipchatMTGBot
+namespace MTGWebJob
 {
     class ImageUtility
     {

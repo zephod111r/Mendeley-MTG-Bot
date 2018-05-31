@@ -7,7 +7,7 @@ using HipchatApiV2;
 using HipchatApiV2.Responses;
 using HipchatApiV2.Enums;
 
-namespace HipchatMTGBot
+namespace MTGWebJob
 {
     class HipchatMessenger : QueueMessenger
     {

@@ -7,7 +7,7 @@ using Microsoft.Azure.WebJobs;
 using System.Text.RegularExpressions;
 using System.Configuration;
 
-namespace HipchatMTGBot
+namespace MTGWebJob
 {
 
     // To learn more about Microsoft Azure WebJobs SDK, please see https://go.microsoft.com/fwlink/?LinkID=320976

@@ -1,7 +1,7 @@
 ﻿using System;
 using Newtonsoft.Json;
 
-namespace HipchatMTGBot
+namespace MTGWebJob
 {
     internal class QueueMessenger : MessageClient
     {
