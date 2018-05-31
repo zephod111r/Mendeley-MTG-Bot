@@ -9,16 +9,24 @@ namespace MTGWebJob
         private const String tableName = "setting";
         internal override String TableName { get { return tableName; } }
 
-        public Setting() : base(Program.Messenger.Room, "") { }
-        public Setting(string name) : base(Program.Messenger.Room, name) { }
+        public Setting() : base(null) { }
+        public Setting(string name) : base(name) { }
         public string Name { get { return RowKey; } set { RowKey = value; } }
 
         static internal typeOfEntity Get<typeOfEntity>(String name)
-            where typeOfEntity : TableEntity, new()
+            where typeOfEntity : Setting, new()
         {
             string query2 = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Program.Messenger.Room);
             query2 = TableQuery.CombineFilters(query2, TableOperators.And, TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, name));
             typeOfEntity output = Program.AzureStorage.Populate<typeOfEntity>(tableName, query2);
+
+            if(output==null)
+            {
+                output = new typeOfEntity();
+                output.Name = name;
+                output.Save();
+            }
+
             return output;
         }
     }

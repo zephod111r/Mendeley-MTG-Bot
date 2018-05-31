@@ -8,31 +8,10 @@ namespace MTGWebJob
 {
     class Search
     {
-        internal static string doSearch(Dictionary<string, string> search, string requestingUser)
+        internal static string New(Dictionary<string, string> search, string requestingUser)
         {
-            int maxResults = 9;
-            if (search.Keys.Contains("maxresults"))
-            {
-                int.TryParse(search["maxresults"], out maxResults);
-
-                if (maxResults < 9)
-                {
-                    maxResults = 9;
-                }
-
-                if (maxResults > 9 && maxResults % 3 != 0)
-                {
-                    maxResults -= (maxResults % 3);
-                }
-
-                if (maxResults > 66)
-                {
-                    maxResults = 66;
-                }
-            }
-
             Dictionary<Card, SetData> cardsFound = new Dictionary<Card, SetData>();
-            foreach (SetData set in cardJson.Values)
+            foreach (SetData set in MagicTheGathering.cardJson.Values)
             {
                 foreach (Card card in set.cards)
                 {
@@ -42,49 +21,7 @@ namespace MTGWebJob
                     }
                 }
             }
-            string returnVal = "<table>";
-            int count = 0;
-            List<string> cardsAlreadyDisplayed = new List<string>();
-
-            foreach (KeyValuePair<Card, SetData> cardPair in cardsFound.OrderByDescending(p => p.Value.releaseDate))
-            {
-                Card card = cardPair.Key;
-                SetData set = cardPair.Value;
-
-                if (cardsAlreadyDisplayed.Contains(card.name))
-                {
-                    continue;
-                }
-
-                cardsAlreadyDisplayed.Add(card.name);
-
-                if (count % 3 == 0)
-                {
-                    returnVal += "<tr>";
-                }
-                returnVal += "<td>";
-                returnVal += displayCard(set, card, 210, 150);
-                returnVal += "</td>";
-
-                if (search.ContainsKey("display") && search["display"] == "full")
-                {
-                    returnVal += getHtmlText(card);
-                }
-                ++count;
-
-
-                if (count >= maxResults)
-                {
-                    returnVal += "</tr>";
-                    break;
-                }
-                else if (count % 3 == 0)
-                {
-                    returnVal += "</tr>";
-                }
-            }
-            returnVal += "</table>";
-            return returnVal;
+            return Output.ShowSearchResults(cardsFound, search, requestingUser);
         }
 
         private static bool doMatch(Card card, Dictionary<string, string> search)

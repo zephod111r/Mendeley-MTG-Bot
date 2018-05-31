@@ -5,8 +5,8 @@ namespace MTGWebJob
 {
     class TableEntry : TableEntity
     {
-        public TableEntry() : base() { }
-        public TableEntry(String partition, String row) : base(partition, row) { }
+        public TableEntry() : base(Program.Messenger.Room, null) { }
+        public TableEntry(String row) : base(Program.Messenger.Room, row) { }
         virtual internal string TableName { get; }
         public int Version { get; set; }
 

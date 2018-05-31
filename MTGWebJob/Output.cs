@@ -143,7 +143,7 @@ namespace MTGWebJob
             return "Card Not Recognized. Did you mean?..." + FuzzyMatch.BestMatch(MagicTheGathering.cardJson, cardName);
         }
 
-        private static string getHtmlText(Card card)
+        internal static string getHtmlText(Card card)
         {
             if (card.text == null)
             {
@@ -152,9 +152,9 @@ namespace MTGWebJob
 
             string widthAlignedText = widthAlign(card.text);
 
-            widthAlignedText = MTGSymbols.convertToHtmlSymbols(widthAlignedText);
+            widthAlignedText = MagicTheGatheringSymbols.convertToHtmlSymbols(widthAlignedText);
 
-            return string.Format("<td>{0}<br>{1}<br/><br/>{2}<br/><br/>{3}<br/></td>", MTGSymbols.convertToHtmlSymbols(card.manaCost), card.type, card.rarity, widthAlignedText);
+            return string.Format("<td>{0}<br>{1}<br/><br/>{2}<br/><br/>{3}<br/></td>", MagicTheGatheringSymbols.convertToHtmlSymbols(card.manaCost), card.type, card.rarity, widthAlignedText);
         }
 
         private static string widthAlign(string cardText, int width = 50)
@@ -205,6 +205,85 @@ namespace MTGWebJob
             }
 
             return output;
+        }
+        internal static string PrintScores(Dictionary<string, PlayerCounts> playerScores)
+        {
+            string ret = "Current Player Scores are:<br><table>";
+
+            int i = 0;
+            foreach (var player in playerScores.OrderByDescending(p => p.Value.Count))
+            {
+                ++i;
+                ret += "<tr><td>" + i.ToString() + ".) </td><td>" + player.Key + "</td><td></td><td>" + player.Value.Correct.ToString() + "</td><td>    (" + player.Value.Count + ")</td></tr>";
+            }
+            ret += "</table>";
+            return ret;
+        }
+        internal static string ShowSearchResults(Dictionary<Card, SetData> cardsFound, Dictionary<string, string> search, string requestingUser)
+        {
+            int maxResults = 9;
+            if (search.Keys.Contains("maxresults"))
+            {
+                int.TryParse(search["maxresults"], out maxResults);
+
+                if (maxResults < 9)
+                {
+                    maxResults = 9;
+                }
+
+                if (maxResults > 9 && maxResults % 3 != 0)
+                {
+                    maxResults -= (maxResults % 3);
+                }
+
+                if (maxResults > 66)
+                {
+                    maxResults = 66;
+                }
+            }
+            string returnVal = "<table>";
+            int count = 0;
+            List<string> cardsAlreadyDisplayed = new List<string>();
+
+            foreach (KeyValuePair<Card, SetData> cardPair in cardsFound.OrderByDescending(p => p.Value.releaseDate))
+            {
+                Card card = cardPair.Key;
+                SetData set = cardPair.Value;
+
+                if (cardsAlreadyDisplayed.Contains(card.name))
+                {
+                    continue;
+                }
+
+                cardsAlreadyDisplayed.Add(card.name);
+
+                if (count % 3 == 0)
+                {
+                    returnVal += "<tr>";
+                }
+                returnVal += "<td>";
+                returnVal += Output.displayCard(set, card, 210, 150);
+                returnVal += "</td>";
+
+                if (search.ContainsKey("display") && search["display"] == "full")
+                {
+                    returnVal += Output.getHtmlText(card);
+                }
+                ++count;
+
+
+                if (count >= maxResults)
+                {
+                    returnVal += "</tr>";
+                    break;
+                }
+                else if (count % 3 == 0)
+                {
+                    returnVal += "</tr>";
+                }
+            }
+            returnVal += "</table>";
+            return returnVal;
         }
     }
 }

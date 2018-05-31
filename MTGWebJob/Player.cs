@@ -6,9 +6,13 @@ namespace MTGWebJob
 {
     class Player : TableEntry
     {
-        internal override string TableName { get { return "cotdscore";  } }
+        private const string tableName = "player";
+        internal override string TableName { get { return tableName;  } }
         private static double decayRateK = Math.Log(0.916666667) / (30.14 * 24 * 60 * 60 * 1000);
-        
+
+        public Player() : base(null) { }
+        public Player(string name) : base(name) { }
+
         public int TotalScore { get; set; }
         public int CotDScore { get; set; }
         public double RankScore { get; set; }
@@ -78,8 +82,7 @@ namespace MTGWebJob
         {
             string query = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Program.Messenger.Room);
             query = TableQuery.CombineFilters(query, TableOperators.And, TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, requestingUser));
-            Player player = new Player();
-            player =  Program.AzureStorage.Populate<Player>(player.TableName, query);
+            Player player = Program.AzureStorage.Populate<Player>(tableName, query);
 
             if (player == null)
             {

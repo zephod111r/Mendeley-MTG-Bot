@@ -6,15 +6,34 @@ namespace MTGWebJob
 {
     class Season : TableEntry
     {
-        public Season() : base() { WinningCount = 50; }
-        static internal string SettingName { get { return tableName; } }
         private const string tableName = "season";
         internal override string TableName { get { return tableName; } }
+
+        public Season() : base(Guid.NewGuid().ToString()) { WinningCount = 50; }
         public int WinningCount { get; set; }
         public string Winner { get; set; }
         public bool InProgress { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
+
+        internal string Id { get { return RowKey; } }
+
+        static internal Season Get()
+        {
+            SettingString seasonId = Setting.Get<SettingString>(tableName);
+            Season currentSeason = Get(seasonId.Value);
+
+            if (currentSeason == null)
+            {
+                currentSeason = new Season();
+                currentSeason.StartDate = DateTime.Now;
+                seasonId.Value = currentSeason.Id;
+                currentSeason.Save();
+                seasonId.Save();
+            }
+
+            return currentSeason;
+        }
 
         static internal Season Get(String seasonId)
         {
@@ -25,12 +44,19 @@ namespace MTGWebJob
         }
         internal static string EndSeason()
         {
-            SettingString SettingString = Setting.Get<SettingString>(Season.SettingName);
+            SettingString seasonId = Setting.Get<SettingString>(tableName);
+            Season oldSeason = Get();
+            if (oldSeason != null)
+            {
+                oldSeason.EndDate = DateTime.Now;
+                oldSeason.Save();
+            }
             Season newSeason = new Season();
-            SettingString.Value = newSeason.RowKey;
+            seasonId.Value = newSeason.Id;
+            newSeason.StartDate = DateTime.Now;
             newSeason.Save();
-            SettingString.Save();
-            return "<h1>New Season Started!</h1>";
+            seasonId.Save();
+            return "<b>New Season Started!</b>";
         }
     }
 }
