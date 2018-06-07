@@ -26,13 +26,12 @@ namespace MTGWebJob
         public String SeasonId { get; set; }
         public bool WinningGuess { get; set; }
 
-        public static List<CardOfTheDayGuess> GuessesForSeason(String seasonId)
+        public static List<CardOfTheDayGuess> GuessesForSeason(string seasonId)
         {
             string query2 = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, Program.Messenger.Room);
-            query2 = TableQuery.CombineFilters(query2, TableOperators.And, TableQuery.GenerateFilterCondition("SeasonId", QueryComparisons.Equal, seasonId));
             List<CardOfTheDayGuess> cotdGuesses = new List<CardOfTheDayGuess>();
-            Program.AzureStorage.Populate<CardOfTheDayGuess>(out cotdGuesses, tableName, query2);
-            return cotdGuesses;
+            Program.AzureStorage.Populate<CardOfTheDayGuess>(out cotdGuesses, tableName, Program.Messenger.Room);
+            return cotdGuesses.Where(g => g.SeasonId == seasonId).ToList();
         }
 
         public static Dictionary<string, PlayerCounts> GetPlayerCounts()

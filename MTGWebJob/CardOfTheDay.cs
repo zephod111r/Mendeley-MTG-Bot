@@ -64,8 +64,7 @@ namespace MTGWebJob
 
         internal static void Display(Object o)
         {
-            SettingString cardId = Setting.Get<SettingString>(tableName);
-            CardOfTheDay cotd = Get(cardId.Value);
+            CardOfTheDay cotd = Get();
 
             try
             {
@@ -97,8 +96,7 @@ namespace MTGWebJob
                             int setIndex = localRandom.Next() % setsToLookin.Count;
 
                             SetData set = setsToLookin.ElementAt(setIndex);
-                            List<Card> rareMythic = set.cards.FindAll(p => p.rarity.ToUpper().Contains("RARE"));
-                            rareMythic.RemoveAll(c => CardOfTheDay.AlreadyUsed(c));
+                            List<Card> rareMythic = set.cards.FindAll(p => p.rarity.ToUpper().Contains("RARE") && !CardOfTheDay.AlreadyUsed(p));
 
                             if (rareMythic.Count == 0)
                             {
@@ -122,12 +120,13 @@ namespace MTGWebJob
                             CardOfTheDay card = new CardOfTheDay();
                             card.PartitionKey = Program.Messenger.Room;
                             card.Card = todisplay.name;
-                            card.Set = set.name;
-                            card.DateShown = DateTime.Now.ToLocalTime();
+                            card.Set = set.code;
+                            card.DateShown = DateTime.Now;
                             card.DisplayString = "MTG Bot - Card of the day<br/><img src=" + ImageUtility.prepareCardImage(set, todisplay, true) + " />";
                             card.Save();
 
-                            cardId.Value = card.Card;
+                            SettingString cardId = Setting.Get<SettingString>(tableName);
+                            cardId.Value = todisplay.name;
                             cardId.Save();
                             cardOfTheDayFound = true;
 
@@ -286,41 +285,43 @@ namespace MTGWebJob
                         guess.Card = card.Card;
                         guess.Guess = cardName;
                         guess.User = requestingUser;
-                        guess.When = DateTime.Now.ToLocalTime();
+                        guess.When = DateTime.Now;
                         guess.SeasonId = season.Id;
 
-                        if (modifiedCardName.Equals(cotdCardNameModified, StringComparison.CurrentCultureIgnoreCase))
+                        if (!modifiedCardName.Equals(cotdCardNameModified, StringComparison.CurrentCultureIgnoreCase))
                         {
-                            SetData set = MagicTheGathering.cardJson[card.Set];
-                            Card cardObj = set.cards.Where(p => p.name == card.Card).First();
-                            CardOfTheDay.Clear();
 
-                            guess.WinningGuess = true;
                             guess.Save();
 
-                            Player player = Player.GetPlayer(requestingUser);
-
-                            player.LastCorrectGuess = DateTime.Now.ToLocalTime();
-                            player.CotDRequest = DateTime.Now.ToLocalTime();
-                            player.Save();
-
-
-                            string ret = requestingUser + " Success    <br>" + Output.displayCard(set, cardObj, 311, 223);
-
-                            Dictionary<string, PlayerCounts> playerScores = CardOfTheDayGuess.GetPlayerCounts();
-                            ret += "<br>" + Output.PrintScores(playerScores);
-
-                            if (playerScores[guess.User].Count > season.WinningCount)
-                            {
-                                ret += "<br>" + Season.EndSeason();
-                            }
-
-                            return ret;
+                            return requestingUser + " " + cardName + " (Incorrect)";
                         }
 
+                        SetData set = MagicTheGathering.cardJson[card.Set];
+                        Card cardObj = set.cards.Where(p => p.name == card.Card).First();
+                        CardOfTheDay.Clear();
+
+                        guess.WinningGuess = true;
                         guess.Save();
 
-                        return requestingUser + " " + cardName + " (Incorrect)";
+                        Player player = Player.GetPlayer(requestingUser);
+
+                        player.LastCorrectGuess = DateTime.Now.ToLocalTime();
+                        player.CotDRequest = DateTime.Now.ToLocalTime();
+                        player.Save();
+
+
+                        string ret = requestingUser + " Success    <br>" + Output.displayCard(set, cardObj, 311, 223);
+
+                        Dictionary<string, PlayerCounts> playerScores = CardOfTheDayGuess.GetPlayerCounts();
+                        ret += "<br>" + Output.PrintScores(playerScores);
+                        
+                        if (playerScores.Keys.Contains(guess.User) && playerScores[guess.User].Count > season.WinningCount)
+                        {
+                            ret += "<br>" + Season.EndSeason();
+                        }
+
+                        return ret;
+
                     }
             }
         }

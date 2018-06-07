@@ -101,7 +101,7 @@ namespace MTGWebJob
         {
             List<Player> players = new List<Player>();
             Player player = new Player();
-            Program.AzureStorage.Populate<Player>(out players, player.TableName, Program.Messenger.Room);
+            Program.AzureStorage.Populate<Player>(out players, tableName, Program.Messenger.Room);
 
             return players;
         }

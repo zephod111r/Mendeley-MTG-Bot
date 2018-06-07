@@ -16,7 +16,7 @@ namespace MTGWebJob
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
 
-        internal string Id { get { return RowKey; } }
+        public string Id { get { return RowKey; } }
 
         static internal Season Get()
         {
@@ -27,6 +27,7 @@ namespace MTGWebJob
             {
                 currentSeason = new Season();
                 currentSeason.StartDate = DateTime.Now;
+                currentSeason.EndDate = DateTime.Now.AddMonths(12);
                 seasonId.Value = currentSeason.Id;
                 currentSeason.Save();
                 seasonId.Save();
@@ -42,6 +43,12 @@ namespace MTGWebJob
             Season output = Program.AzureStorage.Populate<Season>(tableName, query2);
             return output;
         }
+
+        static internal void Get(out List<Season> seasons)
+        {
+            Program.AzureStorage.Populate<Season>(out seasons, tableName, Program.Messenger.Room);
+        }
+
         internal static string EndSeason()
         {
             SettingString seasonId = Setting.Get<SettingString>(tableName);
