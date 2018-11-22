@@ -8,3 +8,5 @@
 /Hip-Chat-Mtg-Bot/obj/Release
 /Hip-Chat-Mtg-Bot/bin/Debug
 *.user
+obj
+bin
