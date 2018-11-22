@@ -28,8 +28,8 @@ namespace MTGWebJob
             {
                 Version = 2;
                 RankScore = CotDScore;
-                LastCorrectGuess = DateTime.Now.ToLocalTime();
-                CotDRequest = DateTime.Now.ToLocalTime();
+                LastCorrectGuess = DateTime.Now;
+                CotDRequest = DateTime.Now;
             }
             if (Version < 3)
             {
@@ -41,8 +41,8 @@ namespace MTGWebJob
                 Version = 4;
                 TotalScore = 0;
                 CotDScore = 0;
-                LastCorrectGuess = DateTime.Now.ToLocalTime();
-                CotDRequest = DateTime.Now.ToLocalTime();
+                LastCorrectGuess = DateTime.Now;
+                CotDRequest = DateTime.Now;
             }
             if (Version < 5)
             {
@@ -69,6 +69,8 @@ namespace MTGWebJob
                 TotalScore = 0;
                 RankScore = 0;
                 CotDScore = 0;
+                CotDRequest = DateTime.Now.AddDays(-1);
+                LastCorrectGuess = DateTime.Now.AddDays(-1);
             }
         }
         

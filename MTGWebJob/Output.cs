@@ -211,7 +211,7 @@ namespace MTGWebJob
             string ret = "Current Player Scores are:<br><table>";
 
             int i = 0;
-            foreach (var player in playerScores.OrderByDescending(p => p.Value.Count))
+            foreach (var player in playerScores.OrderByDescending(p => p.Value.Correct + (p.Value.Correct / p.Value.Count)))
             {
                 ++i;
                 ret += "<tr><td>" + i.ToString() + ".) </td><td>" + player.Key + "</td><td></td><td>" + player.Value.Correct.ToString() + "</td><td>    (" + player.Value.Count + ")</td></tr>";

@@ -250,10 +250,10 @@ namespace MTGWebJob
                         if (card == null)
                         {
                             Player player = Player.GetPlayer(requestingUser);
-                            if ((player.CotDRequest.Date != DateTime.Now.ToLocalTime().Date) &&
-                                (DateTime.Now.ToLocalTime().Hour > 9 && DateTime.Now.ToLocalTime().Hour < 18 && DateTime.Now.ToLocalTime().DayOfWeek != DayOfWeek.Saturday && DateTime.Now.ToLocalTime().DayOfWeek != DayOfWeek.Sunday))
+                            if ((player.CotDRequest.Date != DateTime.Now.Date) && (player.LastCorrectGuess.Date != DateTime.Now.Date) &&
+                                (DateTime.Now.Hour > 9 && DateTime.Now.Hour < 18 && DateTime.Now.DayOfWeek != DayOfWeek.Saturday && DateTime.Now.DayOfWeek != DayOfWeek.Sunday))
                             {
-                                player.CotDRequest = DateTime.Now.ToLocalTime();
+                                player.CotDRequest = DateTime.Now;
                                 player.Save();
                                 Display(null);
                             }
@@ -315,7 +315,7 @@ namespace MTGWebJob
                         Dictionary<string, PlayerCounts> playerScores = CardOfTheDayGuess.GetPlayerCounts();
                         ret += "<br>" + Output.PrintScores(playerScores);
                         
-                        if (playerScores.Keys.Contains(guess.User) && playerScores[guess.User].Count > season.WinningCount)
+                        if (playerScores.Keys.Contains(guess.User) && playerScores[guess.User].Correct >= season.WinningCount)
                         {
                             ret += "<br>" + Season.EndSeason();
                         }
