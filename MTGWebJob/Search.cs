@@ -50,7 +50,7 @@ namespace MTGWebJob
                 {
                     float cmc = -1.0f;
                     float.TryParse(pair.Value, out cmc);
-                    if (cmc != card.cmc)
+                    if (cmc != card.convertedManaCost)
                     {
                         return false;
                     }

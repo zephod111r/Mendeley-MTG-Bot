@@ -60,7 +60,7 @@ namespace MTGWebJob
             //Get new json data on init (so I can just restart bot when new set comes out)
             using (WebClient WebClient = new WebClient())
             {
-                Stream data = WebClient.OpenRead("http://mtgjson.com/json/AllSets-x.json.zip");
+                Stream data = WebClient.OpenRead("https://mtgjson.com/json/AllSets.json.zip");
                 using (ZipArchive archive = new ZipArchive(data))
                 {
                     foreach (ZipArchiveEntry entry in archive.Entries)
