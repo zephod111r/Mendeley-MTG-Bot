@@ -3,9 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
 using System.Text.RegularExpressions;
 using System.Configuration;
+ 
+using Microsoft.Extensions.Configuration; 
+using Microsoft.Extensions.DependencyInjection; 
+using Microsoft.Extensions.Hosting; 
+using Microsoft.Extensions.Logging;
+using Microsoft.Azure.WebJobs;
 
 namespace MTGWebJob
 {
@@ -45,16 +50,38 @@ namespace MTGWebJob
             Messenger.Handle(regexPatternUser, getUserProfile);
             Messenger.Handle(regexPatternHelp, getHelp);
 
-            var config = new JobHostConfiguration();
-
-            if (config.IsDevelopment)
+            var builder = new HostBuilder()
+                .UseEnvironment("Development")
+                .ConfigureWebJobs(b =>
             {
-                config.UseDevelopmentSettings();
-            }
+                b.UseHostId("")
+                //.AddWebJobsLogging()
+                .AddAzureStorage();
+            }).ConfigureAppConfiguration(b =>
+            {
+                // Adding command line as a configuration source 
+                //b.AddCommandLine(args);
+            }) 
+            .ConfigureLogging((context, b) =>
+            { 
+                b.SetMinimumLevel(LogLevel.Debug);
+                //b.AddConsole();
 
-            var host = new JobHost(config);
+                // If this key exists in any config, use it to enable App Insights 
+                string appInsightsKey = context.Configuration["APPINSIGHTS_INSTRUMENTATIONKEY"];
+                if (!string.IsNullOrEmpty(appInsightsKey))
+                {
+                    //b.AddApplicationInsights(o => o.InstrumentationKey = appInsightsKey);
+                }
+            }) 
+            .UseConsoleLifetime();
+            
+            var host = builder.Build();
             // The following code ensures that the WebJob will be running continuously
-            host.RunAndBlock();
+            using (host)
+            {
+                host.Run();
+            }
             Console.WriteLine("Terminated Application");
         }
 

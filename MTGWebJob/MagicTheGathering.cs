@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 namespace MTGWebJob
@@ -75,7 +76,6 @@ namespace MTGWebJob
                     }
                 }
             }
-            /*
             Parallel.ForEach<SetData>(cardJson.Values, (set) => {
                 Parallel.ForEach<Card>(set.cards, (card) => {
                     Console.Write("Processing: {0} {1}\n", set.name, card.name);
@@ -83,7 +83,6 @@ namespace MTGWebJob
                     Console.Write("Completed: {0} {1}\n", set.name, card.name);
                 });
             } );
-            */
             updateTimer = new Timer(UpdateAndLoadData, null, 24 * 60 * 60000, System.Threading.Timeout.Infinite);
         }
 
